@@ -477,20 +477,21 @@
 .review-card {
     border: 1px solid #dee2e6;
     border-radius: 0.5rem;
-    padding: 1rem;
-    margin-bottom: 1rem;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+    background: #fff;
 }
 
 .review-product {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    margin-bottom: 1rem;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
 }
 
 .product-image {
-    width: 60px;
-    height: 60px;
+    width: 40px;
+    height: 40px;
     object-fit: cover;
     border-radius: 0.25rem;
 }
@@ -500,24 +501,42 @@
 }
 
 .product-name {
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: 500;
     margin-bottom: 0.25rem;
+    color: #495057;
 }
 
 .review-content {
-    color: #495057;
-    margin-bottom: 1rem;
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
 }
 
 .review-date {
-    font-size: 0.875rem;
-    color: #6c757d;
+    font-size: 0.8rem;
+    color: #adb5bd;
 }
 
 .review-actions {
     display: flex;
-    gap: 1rem;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.review-actions .btn-link {
+    font-size: 0.8rem;
+    padding: 0;
+    color: #6c757d;
+}
+
+.review-actions .btn-link:hover {
+    color: var(--primary-color);
+}
+
+.review-actions .text-danger:hover {
+    color: #dc3545 !important;
 }
 
 /* Boş Durum */
