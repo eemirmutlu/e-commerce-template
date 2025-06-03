@@ -26,8 +26,8 @@
                     </div>
                     <div class="stat-item">
                         <i class="fas fa-heart"></i>
-                        <span class="stat-value">{{ current_user.liked_products|length }}</span>
-                        <span class="stat-label">Favori</span>
+                        <span class="stat-label">Favoriler</span>
+                        <span class="stat-value">{{ current_user.liked_products.count() }}</span>
                     </div>
                     <div class="stat-item">
                         <i class="fas fa-star"></i>
