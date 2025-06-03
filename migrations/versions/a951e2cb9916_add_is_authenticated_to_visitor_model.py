@@ -1,7 +1,7 @@
 """Add is_authenticated to Visitor model
 
 Revision ID: a951e2cb9916
-Revises: 
+Revises: create_visitor_table
 Create Date: 2025-06-03 13:08:04.709612
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = 'a951e2cb9916'
-down_revision = None
+down_revision = 'create_visitor_table'
 branch_labels = None
 depends_on = None
 
