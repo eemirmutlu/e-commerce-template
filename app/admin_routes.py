@@ -921,14 +921,17 @@ def update_order_status():
         
         order = Order.query.get_or_404(order_id)
         order.status = new_status
+        order.updated_at = datetime.utcnow()
         db.session.commit()
+        
+        # Sipariş durumu değişikliği bildirimi oluştur
+        create_order_notification(order)
         
         return jsonify({
             'success': True,
-            'message': 'Sipariş durumu güncellendi',
-            'status': new_status
+            'message': 'Sipariş durumu başarıyla güncellendi'
         })
     except Exception as e:
         db.session.rollback()
         logger.error(f"Sipariş durumu güncellenirken hata: {str(e)}")
-        return jsonify({'success': False, 'message': 'Bir hata oluştu'}), 500 
+        return jsonify({'success': False, 'message': str(e)}), 400 

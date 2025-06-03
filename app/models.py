@@ -3,7 +3,7 @@ from flask import current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
-from sqlalchemy import func, cast, case, Date
+from sqlalchemy import func, cast, case, Date, Integer
 
 db = SQLAlchemy()
 
@@ -390,7 +390,7 @@ class OrderItem(db.Model):
     @property
     def total_price(self):
         """Ürünün toplam fiyatını döndürür."""
-        return self.price * self.quantity
+        return self.price * self.quantity 
 
 class Visitor(db.Model):
     __tablename__ = 'visitors'
@@ -410,10 +410,8 @@ class Visitor(db.Model):
     @staticmethod
     def get_daily_stats(days=7):
         try:
-            from sqlalchemy import case, func, cast, Integer
-            
             return db.session.query(
-                func.strftime('%d.%m', func.date(Visitor.created_at)).label('date'),
+                func.to_char(func.date(Visitor.created_at), 'DD.MM').label('date'),
                 func.count(Visitor.id).label('total_visits'),
                 func.sum(cast(Visitor.is_authenticated, Integer)).label('authenticated_visits'),
                 func.sum(cast(Visitor.is_admin, Integer)).label('admin_visits'),

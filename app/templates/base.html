@@ -205,7 +205,7 @@
                         <ul class="footer-links">
                             {% for category in categories %}
                             <li>
-                                <a href="{{ url_for('main.products', category=category.id) }}">
+                                <a href="{{ url_for('main.products', category_id=category.id) }}">
                                     <i class="{{ category.icon }} me-2"></i>{{ category.name }}
                                 </a>
                             </li>

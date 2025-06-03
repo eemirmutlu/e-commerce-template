@@ -302,7 +302,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="reviewForm" action="{{ url_for('main.add_review', product_id=product.id) }}" method="POST">
+                <form id="reviewForm">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     
                     <div class="rating-select mb-3">
@@ -329,7 +329,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
-                <button type="submit" form="reviewForm" class="btn btn-primary">Gönder</button>
+                <button type="button" class="btn btn-primary" onclick="submitReview()">Gönder</button>
             </div>
         </div>
     </div>
@@ -1099,6 +1099,41 @@ document.querySelectorAll('.btn-star').forEach(button => {
         });
     });
 });
+
+function submitReview() {
+    const rating = document.getElementById('rating').value;
+    const content = document.getElementById('content').value;
+    
+    if (!rating || !content) {
+        showToast('error', 'Lütfen puan ve değerlendirme yazısı giriniz.');
+        return;
+    }
+    
+    fetch(`/product/{{ product.id }}/review`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            rating: parseInt(rating),
+            comment: content
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('success', 'Değerlendirmeniz başarıyla kaydedildi.');
+            location.reload();
+        } else {
+            showToast('error', data.message || 'Bir hata oluştu.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('error', 'Bir hata oluştu.');
+    });
+}
 
 // Toast
 function showToast(type, message) {

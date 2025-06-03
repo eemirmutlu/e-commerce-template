@@ -113,6 +113,22 @@
         </div>
     </div>
 
+    <!-- Kategori Filtreleri -->
+    <div class="category-filters mb-4">
+        <a href="{{ url_for('main.products') }}" 
+           class="category-filter {{ 'active' if not current_category }}">
+            <i class="fas fa-th-large"></i>
+            <span>Tümü</span>
+        </a>
+        {% for category in categories %}
+        <a href="{{ url_for('main.products', category_id=category.id) }}" 
+           class="category-filter {{ 'active' if current_category == category.id }}">
+            <i class="{{ category.icon }}"></i>
+            <span>{{ category.name }}</span>
+        </a>
+        {% endfor %}
+    </div>
+
     <!-- Products Grid -->
     <div class="row g-4">
         {% if products %}

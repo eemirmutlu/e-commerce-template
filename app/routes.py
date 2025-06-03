@@ -503,16 +503,16 @@ def create_order():
                     'message': f'{product.name if product else "Ürün"} için yeterli stok yok'
                 }), 400
             
-                order_item = OrderItem(
-                    order=order,
+            order_item = OrderItem(
+                order=order,
                 product_id=product_id,
-                    quantity=item['quantity'],
-                    price=item['price']
-                )
-                db.session.add(order_item)
-                
-                # Stok güncelle
-                product.stock -= item['quantity']
+                quantity=item['quantity'],
+                price=item['price']
+            )
+            db.session.add(order_item)
+            
+            # Stok güncelle
+            product.stock -= item['quantity']
         
         db.session.commit()
         
