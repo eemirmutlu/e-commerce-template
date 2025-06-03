@@ -1,4 +1,4 @@
-"""Create visitor table
+"""Create visitors table
 
 Revision ID: create_visitor_table
 Revises: increase_password_hash_length
@@ -15,15 +15,17 @@ branch_labels = None
 depends_on = None
 
 def upgrade():
-    op.create_table('visitor',
+    op.create_table('visitors',
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('ip_address', sa.String(length=45), nullable=True),
         sa.Column('user_agent', sa.String(length=255), nullable=True),
         sa.Column('last_visit', sa.DateTime(), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=True),
         sa.Column('updated_at', sa.DateTime(), nullable=True),
+        sa.Column('is_authenticated', sa.Boolean(), nullable=True),
+        sa.Column('is_admin', sa.Boolean(), nullable=True),
         sa.PrimaryKeyConstraint('id')
     )
 
 def downgrade():
-    op.drop_table('visitor') 
+    op.drop_table('visitors') 

@@ -7,7 +7,7 @@ from app.forms import ProductForm, CategoryForm, NewsForm
 import os
 from datetime import datetime, timedelta
 import logging
-from sqlalchemy import func, desc
+from sqlalchemy import func, desc, cast, Integer
 from app.utils import admin_required
 import requests
 from functools import wraps
@@ -78,8 +78,21 @@ def dashboard():
     users = User.query.order_by(User.created_at.desc()).all()
     visitors = Visitor.query.order_by(Visitor.created_at.desc()).limit(10).all()
     
-    # Ziyaretçi istatistikleri (son 7 gün)
-    visitor_stats = Visitor.get_daily_stats(days=7)
+    # Son 7 günlük ziyaretçi istatistikleri
+    seven_days_ago = datetime.utcnow() - timedelta(days=7)
+    visitor_stats = db.session.query(
+        func.to_char(Visitor.created_at, 'DD.MM').label('date'),
+        func.count(Visitor.id).label('total_visits'),
+        func.sum(cast(Visitor.is_authenticated, Integer)).label('authenticated_visits'),
+        func.sum(cast(Visitor.is_admin, Integer)).label('admin_visits'),
+        func.sum(cast(~Visitor.is_authenticated, Integer)).label('guest_visits')
+    ).filter(
+        Visitor.created_at >= seven_days_ago
+    ).group_by(
+        func.date(Visitor.created_at)
+    ).order_by(
+        func.date(Visitor.created_at)
+    ).all()
     
     # Genel istatistikler
     stats = {

@@ -1,4 +1,4 @@
-"""Create product table and add discount_percent
+"""Create products table and add discount_percent
 
 Revision ID: cde96cf870be
 Revises: 
@@ -17,8 +17,8 @@ depends_on = None
 
 
 def upgrade():
-    # Create product table
-    op.create_table('product',
+    # Create products table
+    op.create_table('products',
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('name', sa.String(length=100), nullable=False),
         sa.Column('description', sa.Text(), nullable=True),
@@ -26,13 +26,16 @@ def upgrade():
         sa.Column('stock', sa.Integer(), nullable=False),
         sa.Column('category_id', sa.Integer(), nullable=True),
         sa.Column('image_url', sa.String(length=255), nullable=True),
+        sa.Column('rating', sa.Float(), nullable=True),
+        sa.Column('is_active', sa.Boolean(), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=True),
         sa.Column('updated_at', sa.DateTime(), nullable=True),
+        sa.Column('likes_count', sa.Integer(), nullable=True),
         sa.Column('discount_percent', sa.Integer(), nullable=True),
-        sa.ForeignKeyConstraint(['category_id'], ['category.id'], ),
+        sa.ForeignKeyConstraint(['category_id'], ['categories.id'], ),
         sa.PrimaryKeyConstraint('id')
     )
 
 
 def downgrade():
-    op.drop_table('product')
+    op.drop_table('products')
