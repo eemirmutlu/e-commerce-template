@@ -15,15 +15,17 @@ branch_labels = None
 depends_on = None
 
 def upgrade():
-    # PostgreSQL'de VARCHAR uzunluğunu artır
-    op.alter_column('users', 'password_hash',
-                    existing_type=sa.String(length=128),
-                    type_=sa.String(length=255),
-                    existing_nullable=True)
+    # SQLite için tablo yeniden oluşturma yaklaşımı
+    with op.batch_alter_table('users') as batch_op:
+        batch_op.alter_column('password_hash',
+                            existing_type=sa.String(length=128),
+                            type_=sa.String(length=255),
+                            existing_nullable=True)
 
 def downgrade():
-    # Eski haline döndür
-    op.alter_column('users', 'password_hash',
-                    existing_type=sa.String(length=255),
-                    type_=sa.String(length=128),
-                    existing_nullable=True) 
+    # SQLite için tablo yeniden oluşturma yaklaşımı
+    with op.batch_alter_table('users') as batch_op:
+        batch_op.alter_column('password_hash',
+                            existing_type=sa.String(length=255),
+                            type_=sa.String(length=128),
+                            existing_nullable=True) 
