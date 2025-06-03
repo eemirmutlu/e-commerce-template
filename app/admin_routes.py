@@ -89,9 +89,9 @@ def dashboard():
     ).filter(
         Visitor.created_at >= seven_days_ago
     ).group_by(
-        func.date(Visitor.created_at)
+        func.to_char(Visitor.created_at, 'DD.MM')
     ).order_by(
-        func.date(Visitor.created_at)
+        func.to_char(Visitor.created_at, 'DD.MM')
     ).all()
     
     # Genel istatistikler
