@@ -177,25 +177,25 @@
         <div class="row justify-content-center mt-5">
             <div class="col-md-8">
                 <div class="timeline">
-                    <div class="timeline-item active">
+                    <div class="timeline-item {{ 'active' if order.status in ['pending', 'processing', 'shipped', 'delivered'] else '' }}">
                         <div class="timeline-content">
                             <h5>Sipariş Alındı</h5>
                             <p>Siparişiniz başarıyla oluşturuldu.</p>
                         </div>
                     </div>
-                    <div class="timeline-item">
+                    <div class="timeline-item {{ 'active' if order.status in ['processing', 'shipped', 'delivered'] else '' }}">
                         <div class="timeline-content">
                             <h5>Hazırlanıyor</h5>
                             <p>Siparişiniz hazırlanmaya başlanacak.</p>
                         </div>
                     </div>
-                    <div class="timeline-item">
+                    <div class="timeline-item {{ 'active' if order.status in ['shipped', 'delivered'] else '' }}">
                         <div class="timeline-content">
                             <h5>Kargoya Verildi</h5>
                             <p>Siparişiniz kargoya verilecek.</p>
                         </div>
                     </div>
-                    <div class="timeline-item">
+                    <div class="timeline-item {{ 'active' if order.status == 'delivered' else '' }}">
                         <div class="timeline-content">
                             <h5>Teslim Edildi</h5>
                             <p>Siparişiniz teslim edilecek.</p>

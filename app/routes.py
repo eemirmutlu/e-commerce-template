@@ -534,6 +534,17 @@ def order_confirmation(order_id):
     order = Order.query.get_or_404(order_id)
     if order.user_id != current_user.id:
         abort(403)
+        
+    # Sipariş durumunu güncelle
+    if order.status == 'pending':
+        try:
+            order.status = 'processing'
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            flash('Sipariş işlenirken bir hata oluştu.', 'error')
+            return redirect(url_for('main.profile'))
+            
     return render_template('order_confirmation.html', order=order)
 
 @main_bp.route('/orders')

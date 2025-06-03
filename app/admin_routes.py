@@ -79,19 +79,18 @@ def dashboard():
     visitors = Visitor.query.order_by(Visitor.created_at.desc()).limit(10).all()
     
     # Son 7 günlük ziyaretçi istatistikleri
-    seven_days_ago = datetime.utcnow() - timedelta(days=7)
     visitor_stats = db.session.query(
-        func.to_char(Visitor.created_at, 'DD.MM').label('date'),
+        func.strftime('%d.%m', Visitor.created_at).label('date'),
         func.count(Visitor.id).label('total_visits'),
         func.sum(cast(Visitor.is_authenticated, Integer)).label('authenticated_visits'),
         func.sum(cast(Visitor.is_admin, Integer)).label('admin_visits'),
-        func.sum(cast(~Visitor.is_authenticated, Integer)).label('guest_visits')
+        func.sum(cast(Visitor.is_authenticated == 0, Integer)).label('guest_visits')
     ).filter(
-        Visitor.created_at >= seven_days_ago
+        Visitor.created_at >= datetime.utcnow() - timedelta(days=7)
     ).group_by(
-        func.to_char(Visitor.created_at, 'DD.MM')
+        func.strftime('%d.%m', Visitor.created_at)
     ).order_by(
-        func.to_char(Visitor.created_at, 'DD.MM')
+        func.strftime('%d.%m', Visitor.created_at)
     ).all()
     
     # Genel istatistikler
@@ -611,18 +610,30 @@ def visitor_details():
     page = request.args.get('page', default=1, type=int)
     
     # İstatistikleri al
-    visitor_stats = Visitor.get_daily_stats(days)
+    visitor_stats = db.session.query(
+        func.strftime('%d.%m', Visitor.created_at).label('date'),
+        func.count(Visitor.id).label('total_visits'),
+        func.sum(cast(Visitor.is_authenticated, Integer)).label('authenticated_visits'),
+        func.sum(cast(Visitor.is_admin, Integer)).label('admin_visits'),
+        func.sum(cast(Visitor.is_authenticated == 0, Integer)).label('guest_visits')
+    ).filter(
+        Visitor.created_at >= datetime.utcnow() - timedelta(days=days)
+    ).group_by(
+        func.strftime('%d.%m', Visitor.created_at)
+    ).order_by(
+        func.strftime('%d.%m', Visitor.created_at)
+    ).all()
     
-    # Tüm ziyaretçileri al (pagination client-side yapılacak)
+    # Tüm ziyaretçileri al
     visitors = Visitor.query.filter(
         Visitor.created_at >= datetime.utcnow() - timedelta(days=days)
     ).order_by(Visitor.created_at.desc()).all()
     
     # İstatistikleri hesapla
-    total_visits = sum(stat.total_visits for stat in visitor_stats)
-    authenticated_visits = sum(stat.authenticated_visits for stat in visitor_stats)
-    admin_visits = sum(stat.admin_visits for stat in visitor_stats)
-    guest_visits = sum(stat.guest_visits for stat in visitor_stats)
+    total_visits = sum(stat.total_visits for stat in visitor_stats) or 1  # Sıfıra bölmeyi önlemek için
+    authenticated_visits = sum(stat.authenticated_visits for stat in visitor_stats) or 0
+    admin_visits = sum(stat.admin_visits for stat in visitor_stats) or 0
+    guest_visits = sum(stat.guest_visits for stat in visitor_stats) or 0
     
     stats = {
         'total_visits': total_visits,
