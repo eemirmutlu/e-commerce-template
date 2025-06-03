@@ -80,7 +80,7 @@ def dashboard():
     
     # Son 7 günlük ziyaretçi istatistikleri
     visitor_stats = db.session.query(
-        func.strftime('%d.%m', Visitor.created_at).label('date'),
+        func.to_char(Visitor.created_at, 'DD.MM').label('date'),
         func.count(Visitor.id).label('total_visits'),
         func.sum(cast(Visitor.is_authenticated, Integer)).label('authenticated_visits'),
         func.sum(cast(Visitor.is_admin, Integer)).label('admin_visits'),
@@ -88,9 +88,9 @@ def dashboard():
     ).filter(
         Visitor.created_at >= datetime.utcnow() - timedelta(days=7)
     ).group_by(
-        func.strftime('%d.%m', Visitor.created_at)
+        func.to_char(Visitor.created_at, 'DD.MM')
     ).order_by(
-        func.strftime('%d.%m', Visitor.created_at)
+        func.to_char(Visitor.created_at, 'DD.MM')
     ).all()
     
     # Genel istatistikler
@@ -611,7 +611,7 @@ def visitor_details():
     
     # İstatistikleri al
     visitor_stats = db.session.query(
-        func.strftime('%d.%m', Visitor.created_at).label('date'),
+        func.to_char(Visitor.created_at, 'DD.MM').label('date'),
         func.count(Visitor.id).label('total_visits'),
         func.sum(cast(Visitor.is_authenticated, Integer)).label('authenticated_visits'),
         func.sum(cast(Visitor.is_admin, Integer)).label('admin_visits'),
@@ -619,9 +619,9 @@ def visitor_details():
     ).filter(
         Visitor.created_at >= datetime.utcnow() - timedelta(days=days)
     ).group_by(
-        func.strftime('%d.%m', Visitor.created_at)
+        func.to_char(Visitor.created_at, 'DD.MM')
     ).order_by(
-        func.strftime('%d.%m', Visitor.created_at)
+        func.to_char(Visitor.created_at, 'DD.MM')
     ).all()
     
     # Tüm ziyaretçileri al
