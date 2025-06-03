@@ -31,6 +31,15 @@
             </button>
 
             <div class="collapse navbar-collapse" id="navbarMain">
+                <div class="mobile-nav-header d-lg-none">
+                    <a class="navbar-brand" href="{{ url_for('main.index') }}">
+                        <span class="brand-text">TechStore</span>
+                    </a>
+                    <button class="mobile-nav-close" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
                 <ul class="navbar-nav mx-auto">
                     <li class="nav-item">
                         <a class="nav-link {{ 'active' if request.endpoint == 'main.index' }}" 
@@ -91,10 +100,17 @@
                 <div class="navbar-nav ms-auto">
                     <div class="nav-item d-flex align-items-center">
                         <a href="{{ url_for('main.view_cart') }}" class="nav-link cart-link">
-                            <i class="fas fa-shopping-cart cart-icon"></i>
+                            <i class="fas fa-shopping-cart"></i>
+                            <span>Sepetim</span>
                             <span class="cart-count">{{ cart_count|default(0) }}</span>
                         </a>
                         {% if current_user.is_authenticated %}
+                            {% if current_user.is_admin %}
+                                <a class="nav-link" href="{{ url_for('admin.dashboard') }}">
+                                    <i class="fas fa-tachometer-alt"></i>
+                                    <span>Admin Panel</span>
+                                </a>
+                            {% endif %}
                             <div class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle" 
                                    href="#" 
@@ -102,14 +118,10 @@
                                    role="button" 
                                    data-bs-toggle="dropdown"
                                    aria-expanded="false">
-                                    <i class="fas fa-user me-2"></i>{{ current_user.username }}
+                                    <i class="fas fa-user"></i>
+                                    <span>{{ current_user.username }}</span>
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end">
-                                    {% if current_user.is_admin %}
-                                        <li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}">
-                                            <i class="fas fa-tachometer-alt me-2"></i>Admin Panel
-                                        </a></li>
-                                    {% endif %}
                                     <li><a class="dropdown-item" href="{{ url_for('main.profile') }}">
                                         <i class="fas fa-user-circle me-2"></i>Profilim
                                     </a></li>
@@ -120,14 +132,23 @@
                                 </ul>
                             </div>
                         {% else %}
-                            <a href="{{ url_for('auth.login') }}" class="btn btn-primary me-2">
-                                <i class="fas fa-sign-in-alt me-2"></i>Giriş Yap
-                            </a>
-                            <a href="{{ url_for('auth.register') }}" class="btn btn-outline-primary">
-                                <i class="fas fa-user-plus me-2"></i>Kayıt Ol
-                            </a>
+                            <div class="d-none d-lg-flex">
+                                <a href="{{ url_for('auth.login') }}" class="btn btn-primary me-2">
+                                    <i class="fas fa-sign-in-alt me-2"></i>Giriş Yap
+                                </a>
+                                <a href="{{ url_for('auth.register') }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-user-plus me-2"></i>Kayıt Ol
+                                </a>
+                            </div>
                         {% endif %}
                     </div>
+                </div>
+                
+                <div class="mobile-nav-footer d-lg-none">
+                    {% if not current_user.is_authenticated %}
+                        <a href="{{ url_for('auth.login') }}" class="btn btn-primary">Giriş Yap</a>
+                        <a href="{{ url_for('auth.register') }}" class="btn btn-outline-primary">Kayıt Ol</a>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -692,6 +713,199 @@
     .toast.bg-info {
         background-color: #17a2b8 !important;
         color: white !important;
+    }
+
+    /* Mobil Navbar */
+    @media (max-width: 991px) {
+        .navbar-toggler {
+            border: none;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .navbar-toggler:focus {
+            box-shadow: none;
+        }
+
+        .navbar-toggler-icon {
+            background-image: none !important;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .navbar-toggler-icon::before,
+        .navbar-toggler-icon::after,
+        .navbar-toggler-icon::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background-color: var(--primary-color);
+            transition: all 0.3s ease;
+        }
+
+        .navbar-toggler-icon::before {
+            top: 0;
+        }
+
+        .navbar-toggler-icon::after {
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .navbar-toggler-icon::after {
+            bottom: 0;
+        }
+
+        .navbar-toggler[aria-expanded="true"] .navbar-toggler-icon {
+            background-color: transparent;
+        }
+
+        .navbar-toggler[aria-expanded="true"] .navbar-toggler-icon::before {
+            transform: rotate(45deg);
+            top: 50%;
+        }
+
+        .navbar-toggler[aria-expanded="true"] .navbar-toggler-icon::after {
+            transform: rotate(-45deg);
+            bottom: 50%;
+        }
+
+        .navbar-collapse {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.98);
+            padding: 2rem;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .navbar-collapse.show {
+            transform: translateX(0);
+        }
+
+        .navbar-nav {
+            margin-top: 2rem;
+        }
+
+        .nav-item {
+            margin: 1rem 0;
+            opacity: 0;
+            transform: translateX(-20px);
+            transition: all 0.3s ease;
+        }
+
+        .navbar-collapse.show .nav-item {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .nav-item:nth-child(1) { transition-delay: 0.1s; }
+        .nav-item:nth-child(2) { transition-delay: 0.2s; }
+        .nav-item:nth-child(3) { transition-delay: 0.3s; }
+        .nav-item:nth-child(4) { transition-delay: 0.4s; }
+        .nav-item:nth-child(5) { transition-delay: 0.5s; }
+
+        .nav-link {
+            font-size: 1.2rem;
+            color: #333;
+            padding: 0.5rem 0;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-link i {
+            width: 24px;
+            text-align: center;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: var(--primary-color);
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        .navbar-brand {
+            position: relative;
+            z-index: 1001;
+        }
+
+        .navbar-toggler {
+            position: relative;
+            z-index: 1001;
+        }
+
+        .mobile-nav-header {
+            display: none;
+        }
+
+        .mobile-nav-footer {
+            position: absolute;
+            bottom: 2rem;
+            left: 0;
+            width: 100%;
+            padding: 0 2rem;
+            text-align: center;
+        }
+
+        .mobile-nav-footer .btn {
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+
+        .cart-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .cart-link i {
+            font-size: 1.25rem;
+        }
+
+        .cart-count {
+            position: static;
+            margin-left: 0.5rem;
+            background-color: #dc3545;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        /* Sadece yan yana olan öğeleri alt alta getir */
+        .navbar-nav.ms-auto .nav-item.d-flex {
+            display: block !important;
+        }
+
+        .navbar-nav.ms-auto .nav-item.d-flex .nav-link {
+            display: block;
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
     }
     </style>
 
