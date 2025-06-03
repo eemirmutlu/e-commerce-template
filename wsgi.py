@@ -7,7 +7,7 @@ sys.path.insert(0, project_root)
 
 from app import create_app
 
-application = create_app()
+app = create_app()
 
 if __name__ == '__main__':
-    application.run()
+    app.run()

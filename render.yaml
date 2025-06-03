@@ -4,6 +4,7 @@ services:
     runtime: python
     buildCommand: |
       pip install -r requirements.txt
+      export FLASK_APP=wsgi.py
       flask db upgrade
     startCommand: gunicorn wsgi:app
     envVars:
