@@ -1,50 +1,23 @@
 services:
   - type: web
-    name: ecommerce-app
+    name: techstore
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
+    startCommand: gunicorn wsgi:app
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.0
-      - key: FLASK_APP
-        value: app.py
       - key: FLASK_ENV
         value: production
+      - key: SECRET_KEY
+        value: 8f42a73054b1749f8f58848be5e6502c8f42a73054b1749f8f58848be5e6502c
+      - key: PYTHON_VERSION
+        value: 3.11.0
       - key: DATABASE_URL
         fromDatabase:
-          name: ecommerce-db
-          property: connectionString
-      - key: SECRET_KEY
-        generateValue: true
-      - key: STRIPE_PUBLIC_KEY
-        sync: false
-      - key: STRIPE_SECRET_KEY
-        sync: false
-      - key: MAIL_SERVER
-        value: smtp.gmail.com
-      - key: MAIL_PORT
-        value: "587"
-      - key: MAIL_USE_TLS
-        value: "true"
-      - key: MAIL_USERNAME
-        sync: false
-      - key: MAIL_PASSWORD
-        sync: false
-      - key: AWS_ACCESS_KEY_ID
-        sync: false
-      - key: AWS_SECRET_ACCESS_KEY
-        sync: false
-      - key: AWS_BUCKET_NAME
-        sync: false
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: ecommerce-redis
+          name: techstore-db
           property: connectionString
 
   - type: redis
-    name: ecommerce-redis
+    name: techstore-db
     plan: free
     ipAllowList: []
 
