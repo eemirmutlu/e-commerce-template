@@ -51,7 +51,7 @@
                         <ul class="dropdown-menu glass-dropdown">
                             {% for category in categories %}
                             <li>
-                                <a class="dropdown-item" href="{{ url_for('main.products', category=category.id) }}">
+                                <a class="dropdown-item" href="{{ url_for('main.products', category_id=category.id) }}">
                                     {{ category.name }}
                                 </a>
                             </li>

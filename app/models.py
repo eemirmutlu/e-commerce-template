@@ -158,7 +158,7 @@ class Product(db.Model):
     def image_path(self):
         """Ürün resminin tam yolunu döndürür."""
         if self.image_url:
-            return f'uploads/{self.image_url}'
+            return f'static/uploads/{self.image_url}'
         return None
 
     @property
