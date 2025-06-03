@@ -1,0 +1,1148 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }} - E-Ticaret{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('main.index') }}">
+                    <i class="fas fa-home"></i>
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('main.products') }}">Ürünler</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('main.products', category=product.category.slug) }}">
+                    {{ product.category.name }}
+                </a>
+            </li>
+            <li class="breadcrumb-item active">{{ product.name }}</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <!-- Sol Kolon: Ürün Fotoğrafı -->
+        <div class="col-lg-6">
+            <div class="product-image-container">
+                <div class="main-image">
+                    <img src="{{ url_for('static', filename='uploads/' + product.image_url) if product.image_url else url_for('static', filename='images/no-image.png') }}"
+                         alt="{{ product.name }}"
+                         class="img-fluid"
+                         id="mainImage">
+                </div>
+                
+                {% if product.images %}
+                <div class="thumbnail-list">
+                    <button class="thumbnail-btn active" data-image="{{ url_for('static', filename='uploads/' + product.image_url) }}">
+                        <img src="{{ url_for('static', filename='uploads/' + product.image_url) }}"
+                             alt="{{ product.name }}"
+                             class="img-fluid">
+                    </button>
+                    {% for image in product.images %}
+                    <button class="thumbnail-btn" data-image="{{ url_for('static', filename='uploads/' + image.url) }}">
+                        <img src="{{ url_for('static', filename='uploads/' + image.url) }}"
+                             alt="{{ product.name }}"
+                             class="img-fluid">
+                    </button>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Sepete Ekleme ve Favorileme Butonları -->
+                <div class="product-buttons mt-3">
+                    <div class="quantity-selector mb-2">
+                        <div class="input-group">
+                            <button type="button" class="btn btn-outline-secondary" onclick="decreaseQuantity()">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <input type="number" 
+                                   id="quantity" 
+                                   value="1" 
+                                   min="1" 
+                                   max="{{ product.stock }}"
+                                   class="form-control text-center">
+                            <button type="button" class="btn btn-outline-secondary" onclick="increaseQuantity()">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="button" 
+                            class="btn btn-primary w-100 mb-2"
+                            onclick="addToCart({{ product.id }}, this)"
+                            {% if product.stock == 0 %}disabled{% endif %}>
+                        <i class="fas fa-cart-plus me-2"></i>
+                        Sepete Ekle
+                    </button>
+
+                    {% if current_user.is_authenticated %}
+                    <button type="button" 
+                            class="btn btn-outline-primary w-100 {% if current_user.is_authenticated and current_user.has_liked_product(product) %}liked{% endif %}"
+                            onclick="toggleLike(this, {{ product.id }})"
+                            title="Favorilere ekle"
+                            {% if not current_user.is_authenticated %}disabled{% endif %}>
+                        <i class="fas fa-heart me-2"></i>
+                        <span class="like-btn-text">{% if current_user.is_authenticated and current_user.has_liked_product(product) %}Favorilerden Kaldır{% else %}Favorilere Ekle{% endif %}</span>
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sağ Kolon: Ürün Detayları -->
+        <div class="col-lg-6">
+            <div class="product-details">
+                <h1 class="product-title mb-2">{{ product.name }}</h1>
+                
+                <div class="product-category mb-3">
+                    <a href="{{ url_for('main.products', category=product.category.slug) }}">
+                        {{ product.category.name }}
+                    </a>
+                </div>
+
+                <div class="product-rating mb-3">
+                    <div class="stars">
+                        {% for i in range(5) %}
+                        <i class="fas fa-star {{ 'text-warning' if i < product.rating else 'text-muted' }}"></i>
+                        {% endfor %}
+                    </div>
+                    <span class="rating-count">({{ product.reviews|length }} değerlendirme)</span>
+                    {% if current_user.is_authenticated %}
+                    <button class="btn btn-link btn-sm" data-bs-toggle="modal" data-bs-target="#reviewModal">
+                        Değerlendir
+                    </button>
+                    {% endif %}
+                </div>
+
+                <div class="product-price mb-4">
+                    {% if product.discount_price %}
+                    <div class="price-current">{{ product.discount_price|currency }}</div>
+                    <div class="price-original">{{ product.price|currency }}</div>
+                    <div class="price-discount">%{{ product.discount_percent }} indirim</div>
+                    {% else %}
+                    <div class="price-current">{{ product.price|currency }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="product-description mb-4">
+                    {{ product.description|safe }}
+                </div>
+
+                <div class="product-meta mb-4">
+                    <div class="meta-item">
+                        <i class="fas fa-box"></i>
+                        <span>Stok Durumu:</span>
+                        {% if product.stock > 0 %}
+                        <span class="text-success">Stokta</span>
+                        {% else %}
+                        <span class="text-danger">Stokta Yok</span>
+                        {% endif %}
+                    </div>
+                    <div class="meta-item">
+                        <i class="fas fa-truck"></i>
+                        <span>Kargo:</span>
+                        <span>Ücretsiz Kargo</span>
+                    </div>
+                    <div class="meta-item">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Güvenli Ödeme</span>
+                    </div>
+                </div>
+
+                <div class="product-share">
+                    <span>Paylaş:</span>
+                    <a href="#" class="btn-share" onclick="shareOnFacebook()">
+                        <i class="fab fa-facebook"></i>
+                    </a>
+                    <a href="#" class="btn-share" onclick="shareOnTwitter()">
+                        <i class="fab fa-twitter"></i>
+                    </a>
+                    <a href="#" class="btn-share" onclick="shareOnWhatsApp()">
+                        <i class="fab fa-whatsapp"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Değerlendirmeler -->
+    <div class="product-reviews mt-5">
+        <h2 class="section-title">
+            Değerlendirmeler
+            <span class="badge bg-primary">{{ product.review_count }}</span>
+        </h2>
+
+        {% if product.reviews %}
+        <div class="reviews-list">
+            {% for review in product.reviews %}
+            <div class="review-item">
+                <div class="review-header">
+                    <div class="review-user">
+                        <img src="{{ review.user.avatar_url or url_for('static', filename='images/default-avatar.png') }}"
+                             alt="{{ review.user.username }}"
+                             class="review-avatar">
+                        <div class="review-user-info">
+                            <div class="review-username">{{ review.user.username }}</div>
+                            <div class="review-date">{{ review.created_at|datetime }}</div>
+                        </div>
+                    </div>
+                    <div class="review-rating">
+                        {% for i in range(5) %}
+                        <i class="fas fa-star {{ 'text-warning' if i < review.rating else 'text-muted' }}"></i>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="review-content">
+                    {{ review.content }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-reviews">
+            <i class="fas fa-comment-slash"></i>
+            <p>Henüz değerlendirme yapılmamış.</p>
+            {% if current_user.is_authenticated %}
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#reviewModal">
+                İlk Değerlendirmeyi Yap
+            </button>
+            {% else %}
+            <a href="{{ url_for('auth.login') }}" class="btn btn-primary">
+                Değerlendirme Yapmak İçin Giriş Yap
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Benzer Ürünler -->
+    {% if related_products %}
+    <div class="related-products mt-5">
+        <h2 class="section-title">Benzer Ürünler</h2>
+        <div class="row g-4">
+            {% for related in related_products %}
+            <div class="col-6 col-md-4 col-lg-3">
+                <div class="product-card-modern">
+                    <div class="product-badges">
+                        {% if related.discount_percent %}
+                        <span class="badge bg-danger">%{{ related.discount_percent }}</span>
+                        {% endif %}
+                        {% if related.is_new %}
+                        <span class="badge bg-success">Yeni</span>
+                        {% endif %}
+                    </div>
+                    <div class="product-image">
+                        <a href="{{ url_for('main.product_detail', product_id=related.id) }}">
+                            {% if related.image_url %}
+                            <img src="{{ url_for('static', filename='uploads/' + related.image_url) }}" 
+                                 alt="{{ related.name }}"
+                                 class="img-fluid">
+                            {% else %}
+                            <div class="no-image">
+                                <i class="fas fa-image"></i>
+                            </div>
+                            {% endif %}
+                        </a>
+                        <div class="product-actions">
+                            <button class="btn-action" onclick="addToCart({{ related.id }}, this)" title="Sepete Ekle">
+                                <i class="fas fa-cart-plus"></i>
+                            </button>
+                            <button class="btn-action {% if current_user.is_authenticated and current_user.has_liked_product(related) %}liked{% endif %}"
+                                    onclick="toggleLike(this, {{ related.id }})" 
+                                    {% if not current_user.is_authenticated %}disabled{% endif %}
+                                    title="Favorilere Ekle">
+                                <i class="fas fa-heart"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="product-info">
+                        <div class="product-category">{{ related.category.name }}</div>
+                        <h3 class="product-title">
+                            <a href="{{ url_for('main.product_detail', product_id=related.id) }}">{{ related.name }}</a>
+                        </h3>
+                        <div class="product-rating">
+                            {% for i in range(5) %}
+                            <i class="fas fa-star {{ 'text-warning' if i < related.rating else 'text-muted' }}"></i>
+                            {% endfor %}
+                            <span class="rating-count">({{ related.review_count }})</span>
+                        </div>
+                        <div class="product-price">
+                            {% if related.discount_percent %}
+                            <span class="original-price">₺{{ "%.2f"|format(related.original_price) }}</span>
+                            {% endif %}
+                            <span class="current-price">₺{{ "%.2f"|format(related.current_price) }}</span>
+                        </div>
+                        <div class="product-stock">
+                            {% if related.stock > 0 %}
+                            <span class="text-success">Stokta</span>
+                            {% else %}
+                            <span class="text-danger">Stokta Yok</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Review Modal -->
+{% if current_user.is_authenticated %}
+<div class="modal fade" id="reviewModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Ürün Değerlendirmesi</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="reviewForm" action="{{ url_for('main.add_review', product_id=product.id) }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="rating-select mb-3">
+                        <label class="form-label">Puanınız</label>
+                        <div class="stars-select">
+                            {% for i in range(5) %}
+                            <button type="button" class="btn-star" data-rating="{{ i + 1 }}">
+                                <i class="fas fa-star"></i>
+                            </button>
+                            {% endfor %}
+                        </div>
+                        <input type="hidden" name="rating" id="rating" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="content" class="form-label">Değerlendirmeniz</label>
+                        <textarea class="form-control" 
+                                  id="content" 
+                                  name="content" 
+                                  rows="4" 
+                                  required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                <button type="submit" form="reviewForm" class="btn btn-primary">Gönder</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Breadcrumb */
+.breadcrumb {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+}
+
+.breadcrumb-item {
+    display: flex;
+    align-items: center;
+    font-size: 0.875rem;
+}
+
+.breadcrumb-item a {
+    color: #666;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.breadcrumb-item a:hover {
+    color: var(--primary-color);
+}
+
+.breadcrumb-item.active {
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    content: "›";
+    font-size: 1.25rem;
+    line-height: 1;
+    color: #666;
+    padding: 0 0.5rem;
+}
+
+/* Ürün Fotoğrafı */
+.product-image-container {
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 1rem;
+}
+
+.main-image {
+    margin-bottom: 1rem;
+}
+
+.main-image img {
+    width: 100%;
+    height: auto;
+    border-radius: 0.25rem;
+}
+
+.thumbnail-list {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding: 0.5rem 0;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.thumbnail-list::-webkit-scrollbar {
+    display: none;
+}
+
+.thumbnail-btn {
+    width: 80px;
+    height: 80px;
+    padding: 0;
+    border: 2px solid transparent;
+    border-radius: 0.25rem;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: none;
+}
+
+.thumbnail-btn img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.thumbnail-btn:hover,
+.thumbnail-btn.active {
+    border-color: var(--primary-color);
+}
+
+/* Ürün Detayları */
+.product-details {
+    padding: 1rem;
+}
+
+.product-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #333;
+}
+
+.product-category a {
+    color: #666;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.product-category a:hover {
+    color: var(--primary-color);
+}
+
+.product-rating {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.stars {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.rating-count {
+    color: #666;
+    font-size: 0.875rem;
+}
+
+.product-price {
+    padding: 1rem 0;
+    border-top: 1px solid #dee2e6;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.price-current {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.price-original {
+    font-size: 1.25rem;
+    color: #666;
+    text-decoration: line-through;
+    margin-left: 0.5rem;
+}
+
+.price-discount {
+    display: inline-block;
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-left: 0.5rem;
+}
+
+.product-description {
+    color: #666;
+    line-height: 1.6;
+}
+
+.product-meta {
+    padding: 1rem;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.meta-item:last-child {
+    margin-bottom: 0;
+}
+
+.meta-item i {
+    color: var(--primary-color);
+    width: 1.5rem;
+    text-align: center;
+}
+
+.product-share {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: #666;
+}
+
+.btn-share {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.btn-share:hover {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: #fff;
+}
+
+/* Ürün Butonları */
+.product-buttons {
+    border-top: 1px solid #dee2e6;
+    padding-top: 1rem;
+}
+
+.quantity-selector .input-group {
+    max-width: 200px;
+    margin: 0 auto;
+}
+
+.quantity-selector .form-control {
+    text-align: center;
+    font-weight: 600;
+}
+
+.quantity-selector .btn {
+    width: 40px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Değerlendirmeler */
+.section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.reviews-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.review-item {
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.review-item:last-child {
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.review-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.review-user {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.review-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.review-username {
+    font-weight: 600;
+    color: #212529;
+}
+
+.review-date {
+    font-size: 0.875rem;
+    color: #666;
+}
+
+.review-content {
+    color: #495057;
+    line-height: 1.6;
+}
+
+.no-reviews {
+    text-align: center;
+    padding: 3rem 0;
+    color: #666;
+}
+
+.no-reviews i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+/* Review Modal */
+.rating-select {
+    text-align: center;
+}
+
+.stars-select {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.btn-star {
+    background: none;
+    border: none;
+    color: #dee2e6;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.btn-star:hover,
+.btn-star.active {
+    color: #ffc107;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .product-title {
+        font-size: 1.5rem;
+    }
+    
+    .price-current {
+        font-size: 1.75rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .product-image-container {
+        margin-bottom: 1.5rem;
+    }
+    
+    .product-title {
+        font-size: 1.25rem;
+    }
+    
+    .price-current {
+        font-size: 1.5rem;
+    }
+    
+    .quantity-selector {
+        max-width: 100%;
+    }
+    
+    .product-share {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 576px) {
+    .product-actions {
+        flex-direction: column;
+    }
+    
+    .quantity-selector {
+        width: 100%;
+    }
+    
+    .add-to-cart,
+    .like-button {
+        width: 100%;
+    }
+}
+
+/* Toast bildirimleri için stil */
+.toast-container {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    z-index: 9999;
+}
+
+.toast {
+    background: white;
+    border: none;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    min-width: 250px;
+}
+
+.toast.bg-success {
+    background-color: #28a745 !important;
+    color: white !important;
+}
+
+.toast.bg-error {
+    background-color: #dc3545 !important;
+    color: white !important;
+}
+
+.toast.bg-warning {
+    background-color: #ffc107 !important;
+    color: #212529 !important;
+}
+
+.toast.bg-info {
+    background-color: #17a2b8 !important;
+    color: white !important;
+}
+
+/* Sepet sayacı için stil */
+.cart-count {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background-color: #dc3545;
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+/* Modern Product Card */
+.product-card-modern {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+}
+
+.product-card-modern:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.product-badges {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 3;
+    display: flex;
+    gap: 5px;
+}
+
+.product-badges .badge {
+    padding: 0.5rem 0.75rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+}
+
+.product-image {
+    position: relative;
+    width: 100%;
+    padding-top: 100%;
+    overflow: hidden;
+    background: #f8f9fa;
+}
+
+.product-image a {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.product-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.product-card-modern:hover .product-image img {
+    transform: scale(1.05);
+}
+
+.product-actions {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    background: rgba(255,255,255,0) !important;
+    backdrop-filter: blur(5px);
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+    z-index: 2;
+}
+
+.product-card-modern:hover .product-actions {
+    transform: translateY(0);
+}
+
+.btn-action {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: #fff;
+    color: #495057;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: all 0.2s;
+}
+
+.btn-action:hover {
+    background: var(--primary-color);
+    color: #fff;
+    transform: translateY(-2px);
+}
+
+.btn-action.liked {
+    background: #dc3545;
+    color: #fff;
+}
+
+.product-info {
+    padding: 15px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+}
+
+.product-category {
+    font-size: 0.9rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.product-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.product-title a {
+    color: #212529;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.product-title a:hover {
+    color: var(--primary-color);
+}
+
+.product-rating {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin: 0.5rem 0;
+}
+
+.product-rating .fa-star {
+    font-size: 0.9rem;
+}
+
+.rating-count {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-left: 0.25rem;
+}
+
+.product-price {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0.5rem 0;
+}
+
+.original-price {
+    font-size: 0.9rem;
+    color: #6c757d;
+    text-decoration: line-through;
+}
+
+.current-price {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.product-stock {
+    font-size: 0.9rem;
+    margin-top: auto;
+}
+
+.no-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    color: #adb5bd;
+    font-size: 2rem;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Product Gallery
+document.querySelectorAll('.thumbnail-btn').forEach(button => {
+    button.addEventListener('click', function() {
+        const imageUrl = this.dataset.image;
+        document.getElementById('mainImage').src = imageUrl;
+        
+        document.querySelectorAll('.thumbnail-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        this.classList.add('active');
+    });
+});
+
+// Quantity Selector
+function decreaseQuantity() {
+    const input = document.getElementById('quantity');
+    const value = parseInt(input.value);
+    if (value > 1) {
+        input.value = value - 1;
+    }
+}
+
+function increaseQuantity() {
+    const input = document.getElementById('quantity');
+    const value = parseInt(input.value);
+    const max = parseInt(input.max);
+    if (value < max) {
+        input.value = value + 1;
+    }
+}
+
+// Add to Cart
+function addToCart(productId, button) {
+    const quantity = document.getElementById('quantity').value;
+    
+    fetch('/cart/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            product_id: productId,
+            quantity: parseInt(quantity)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('success', 'Ürün sepete eklendi!');
+            updateCartCount(data.cart_count);
+        } else {
+            showToast('error', data.message || 'Bir hata oluştu.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('error', 'Bir hata oluştu.');
+    });
+}
+
+// Like Button
+function toggleLike(button, productId) {
+    if (button.disabled) {
+        showToast('warning', 'Ürünü beğenmek için giriş yapmalısınız.');
+        return;
+    }
+    
+    fetch(`/product/${productId}/like`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            button.classList.toggle('liked');
+            const textSpan = button.querySelector('.like-btn-text');
+            if (data.action === 'liked') {
+                textSpan.textContent = 'Favorilerden Kaldır';
+                showToast('info', 'Ürün favorilere eklendi!');
+            } else {
+                textSpan.textContent = 'Favorilere Ekle';
+                showToast('info', 'Ürün favorilerden çıkarıldı.');
+            }
+        } else {
+            showToast('error', data.message || 'Bir hata oluştu.');
+        }
+    })
+    .catch(error => {
+        showToast('error', 'Bir hata oluştu.');
+    });
+}
+
+// Share Buttons
+function shareOnFacebook() {
+    const url = encodeURIComponent(window.location.href);
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
+}
+
+function shareOnTwitter() {
+    const url = encodeURIComponent(window.location.href);
+    const text = encodeURIComponent('{{ product.name }}');
+    window.open(`https://twitter.com/intent/tweet?url=${url}&text=${text}`, '_blank');
+}
+
+function shareOnWhatsApp() {
+    const url = encodeURIComponent(window.location.href);
+    const text = encodeURIComponent('{{ product.name }}');
+    window.open(`https://wa.me/?text=${text}%20${url}`, '_blank');
+}
+
+// Review Modal
+document.querySelectorAll('.btn-star').forEach(button => {
+    button.addEventListener('click', function() {
+        const rating = this.dataset.rating;
+        document.getElementById('rating').value = rating;
+        
+        document.querySelectorAll('.btn-star').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.rating <= rating) {
+                btn.classList.add('active');
+            }
+        });
+    });
+});
+
+// Toast
+function showToast(type, message) {
+    const toast = document.createElement('div');
+    toast.className = `toast align-items-center text-white bg-${type} border-0`;
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    
+    const container = document.createElement('div');
+    container.className = 'toast-container';
+    container.appendChild(toast);
+    document.body.appendChild(container);
+    
+    const bsToast = new bootstrap.Toast(toast, {
+        animation: true,
+        autohide: true,
+        delay: 3000
+    });
+    bsToast.show();
+    
+    toast.addEventListener('hidden.bs.toast', () => {
+        container.remove();
+    });
+}
+
+function updateCartCount(count) {
+    const cartCount = document.querySelector('.cart-count');
+    if (cartCount) {
+        cartCount.textContent = count;
+        cartCount.classList.add('animate__animated', 'animate__bounceIn');
+        setTimeout(() => {
+            cartCount.classList.remove('animate__animated', 'animate__bounceIn');
+        }, 1000);
+    }
+}
+</script>
+{% endblock %} 

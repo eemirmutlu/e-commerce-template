@@ -1,0 +1,458 @@
+{% extends "base.html" %}
+
+{% block title %}Sipariş Detayı #{{ order.id }} - E-Ticaret{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('main.index') }}">
+                    <i class="fas fa-home"></i>
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('main.profile') }}">Profilim</a>
+            </li>
+            <li class="breadcrumb-item active">Sipariş #{{ order.id }}</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <!-- Sol Kolon: Sipariş Detayları -->
+        <div class="col-lg-8">
+            <!-- Sipariş Durumu -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="order-status-timeline">
+                        <div class="status-step {{ 'active' if order.status in ['pending', 'processing', 'shipped', 'delivered'] }}">
+                            <div class="status-icon">
+                                <i class="fas fa-shopping-cart"></i>
+                            </div>
+                            <div class="status-info">
+                                <h6>Sipariş Alındı</h6>
+                                <small>{{ order.created_at.strftime('%d.%m.%Y %H:%M') }}</small>
+                            </div>
+                        </div>
+                        <div class="status-step {{ 'active' if order.status in ['processing', 'shipped', 'delivered'] }}">
+                            <div class="status-icon">
+                                <i class="fas fa-cog"></i>
+                            </div>
+                            <div class="status-info">
+                                <h6>İşleniyor</h6>
+                                {% if order.status in ['processing', 'shipped', 'delivered'] %}
+                                <small>{{ order.updated_at.strftime('%d.%m.%Y %H:%M') }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="status-step {{ 'active' if order.status in ['shipped', 'delivered'] }}">
+                            <div class="status-icon">
+                                <i class="fas fa-truck"></i>
+                            </div>
+                            <div class="status-info">
+                                <h6>Kargoya Verildi</h6>
+                                {% if order.status in ['shipped', 'delivered'] %}
+                                <small>{{ order.updated_at.strftime('%d.%m.%Y %H:%M') }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="status-step {{ 'active' if order.status == 'delivered' }}">
+                            <div class="status-icon">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div class="status-info">
+                                <h6>Teslim Edildi</h6>
+                                {% if order.status == 'delivered' %}
+                                <small>{{ order.updated_at.strftime('%d.%m.%Y %H:%M') }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sipariş Ürünleri -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-shopping-bag me-2"></i>Sipariş Ürünleri
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="order-items">
+                        {% for item in order.items %}
+                        <div class="order-item">
+                            <div class="order-item-image">
+                                <img src="{{ url_for('static', filename='uploads/' + item.product.image_url) if item.product.image_url else url_for('static', filename='images/no-image.png') }}" 
+                                     alt="{{ item.product.name }}">
+                            </div>
+                            <div class="order-item-details">
+                                <h6 class="order-item-name">
+                                    <a href="{{ url_for('main.product_detail', product_id=item.product.id) }}">
+                                        {{ item.product.name }}
+                                    </a>
+                                </h6>
+                                <div class="order-item-meta">
+                                    <span class="order-item-quantity">{{ item.quantity }} adet</span>
+                                    <span class="order-item-price">{{ "%.2f"|format(item.price) }} ₺</span>
+                                </div>
+                            </div>
+                            <div class="order-item-total">
+                                {{ "%.2f"|format(item.price * item.quantity) }} ₺
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="order-summary">
+                        <h3>Sipariş Özeti</h3>
+                        <div class="summary-item">
+                            <span>Ara Toplam:</span>
+                            <span>{{ "%.2f"|format(order.total_amount / Decimal('1.18')) }} ₺</span>
+                        </div>
+                        <div class="summary-item">
+                            <span>KDV (18%):</span>
+                            <span>{{ "%.2f"|format(order.total_amount - (order.total_amount / Decimal('1.18'))) }} ₺</span>
+                        </div>
+                        <div class="summary-item total">
+                            <span>Toplam:</span>
+                            <span>{{ "%.2f"|format(order.total_amount) }} ₺</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sağ Kolon: Sipariş Bilgileri -->
+        <div class="col-lg-4">
+            <!-- Teslimat Bilgileri -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-truck me-2"></i>Teslimat Bilgileri
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="delivery-info">
+                        <div class="info-group">
+                            <label>Adres Adı</label>
+                            <div>{{ order.address.name }}</div>
+                        </div>
+                        <div class="info-group">
+                            <label>Adres</label>
+                            <div>{{ order.address.full_address }}</div>
+                        </div>
+                        <div class="info-group">
+                            <label>Şehir</label>
+                            <div>{{ order.address.city }}</div>
+                        </div>
+                        <div class="info-group">
+                            <label>Posta Kodu</label>
+                            <div>{{ order.address.postal_code }}</div>
+                        </div>
+                        <div class="info-group">
+                            <label>Telefon</label>
+                            <div>{{ order.address.phone }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ödeme Bilgileri -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-credit-card me-2"></i>Ödeme Bilgileri
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="payment-info">
+                        <div class="info-group">
+                            <label>Ödeme Yöntemi</label>
+                            <div>
+                                <i class="fas fa-credit-card me-2"></i>
+                                {{ order.credit_card.card_number[-4:] }} ile ödeme
+                            </div>
+                        </div>
+                        <div class="info-group">
+                            <label>Kart Sahibi</label>
+                            <div>{{ order.credit_card.card_holder }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Yardım -->
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="fas fa-question-circle me-2"></i>Yardıma mı ihtiyacınız var?
+                    </h6>
+                    <p class="card-text text-muted">
+                        Siparişinizle ilgili sorularınız için müşteri hizmetlerimizle iletişime geçebilirsiniz.
+                    </p>
+                    <a href="{{ url_for('main.contact') }}" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-headset me-2"></i>Müşteri Hizmetleri
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Breadcrumb */
+.breadcrumb {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+}
+
+.breadcrumb-item {
+    display: flex;
+    align-items: center;
+    font-size: 0.875rem;
+}
+
+.breadcrumb-item a {
+    color: #666;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.breadcrumb-item a:hover {
+    color: var(--primary-color);
+}
+
+.breadcrumb-item.active {
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    content: "›";
+    font-size: 1.25rem;
+    line-height: 1;
+    color: #666;
+    padding: 0 0.5rem;
+}
+
+/* Sipariş Durumu Timeline */
+.order-status-timeline {
+    display: flex;
+    justify-content: space-between;
+    position: relative;
+    padding: 2rem 0;
+}
+
+.order-status-timeline::before {
+    content: '';
+    position: absolute;
+    top: 2rem;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #e9ecef;
+    z-index: 1;
+}
+
+.status-step {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    flex: 1;
+}
+
+.status-icon {
+    width: 3rem;
+    height: 3rem;
+    background: #fff;
+    border: 2px solid #e9ecef;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    color: #adb5bd;
+    transition: all 0.3s ease;
+}
+
+.status-step.active .status-icon {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: #fff;
+}
+
+.status-info h6 {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #495057;
+}
+
+.status-info small {
+    color: #6c757d;
+    font-size: 0.75rem;
+}
+
+/* Sipariş Ürünleri */
+.order-items {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.order-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 0.5rem;
+}
+
+.order-item-image {
+    width: 80px;
+    height: 80px;
+    border-radius: 0.25rem;
+    overflow: hidden;
+}
+
+.order-item-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.order-item-details {
+    flex: 1;
+}
+
+.order-item-name {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+}
+
+.order-item-name a {
+    color: #212529;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.order-item-name a:hover {
+    color: var(--primary-color);
+}
+
+.order-item-meta {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.order-item-total {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+/* Sipariş Özeti */
+.order-summary {
+    padding: 1rem 0;
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.summary-item.total {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e9ecef;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #212529;
+}
+
+/* Teslimat ve Ödeme Bilgileri */
+.info-group {
+    margin-bottom: 1rem;
+}
+
+.info-group:last-child {
+    margin-bottom: 0;
+}
+
+.info-group label {
+    display: block;
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+}
+
+.info-group div {
+    font-weight: 500;
+    color: #212529;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .order-status-timeline {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1.5rem;
+        padding: 1rem 0;
+    }
+    
+    .order-status-timeline::before {
+        top: 0;
+        bottom: 0;
+        left: 1.5rem;
+        width: 2px;
+        height: auto;
+    }
+    
+    .status-step {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        text-align: left;
+    }
+    
+    .status-icon {
+        margin: 0;
+    }
+    
+    .status-info {
+        text-align: left;
+    }
+}
+
+@media (max-width: 576px) {
+    .order-item {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .order-item-image {
+        width: 100%;
+        height: 200px;
+    }
+    
+    .order-item-meta {
+        justify-content: center;
+    }
+    
+    .order-item-total {
+        margin-top: 0.5rem;
+    }
+}
+</style>
+{% endblock %} 

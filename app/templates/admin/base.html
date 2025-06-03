@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Admin Panel{% endblock %} - {{ config.SITE_NAME }}</title>
+    
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+    
+    <!-- CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/admin.css') }}" rel="stylesheet">
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="admin-panel">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <a href="{{ url_for('admin.dashboard') }}" class="sidebar-brand">
+                <img src="{{ url_for('static', filename='img/logo.png') }}" alt="{{ config.SITE_NAME }}" class="sidebar-logo">
+                <span class="sidebar-title">{{ config.SITE_NAME }}</span>
+            </a>
+            <button class="btn btn-link sidebar-toggle d-lg-none">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        
+        <div class="sidebar-body">
+            <nav class="sidebar-nav">
+                <ul class="nav flex-column">
+            <li class="nav-item">
+                        <a href="{{ url_for('admin.dashboard') }}" class="nav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                        <a href="{{ url_for('admin.manage_products') }}" class="nav-link {% if request.endpoint == 'admin.manage_products' %}active{% endif %}">
+                    <i class="fas fa-box"></i>
+                    <span>Ürünler</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                        <a href="{{ url_for('admin.manage_categories') }}" class="nav-link {% if request.endpoint == 'admin.manage_categories' %}active{% endif %}">
+                    <i class="fas fa-tags"></i>
+                    <span>Kategoriler</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                        <a href="{{ url_for('admin.manage_news') }}" class="nav-link {% if request.endpoint == 'admin.manage_news' %}active{% endif %}">
+                    <i class="fas fa-newspaper"></i>
+                    <span>Haberler</span>
+                </a>
+            </li>
+        </ul>
+            </nav>
+        </div>
+
+        <div class="sidebar-footer">
+            <div class="dropdown">
+                <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown">
+                    <img src="{{ current_user.avatar_url or url_for('static', filename='img/default-avatar.png') }}" 
+                         alt="{{ current_user.username }}" 
+                         class="rounded-circle me-2" 
+                         width="32" 
+                         height="32">
+                    <div class="d-none d-lg-block">
+                        <div class="fw-bold">{{ current_user.username }}</div>
+                        <small class="text-muted">Admin</small>
+                    </div>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                    <li>
+                        <a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">
+                <i class="fas fa-sign-out-alt me-2"></i>Çıkış Yap
+            </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+            <div class="container-fluid">
+                <button class="btn btn-link sidebar-toggle d-none d-lg-block">
+                <i class="fas fa-bars"></i>
+            </button>
+                
+                <div class="d-flex align-items-center ms-auto">
+                    <!-- Notifications -->
+                    <div class="dropdown me-3">
+                        <button class="btn btn-link position-relative" data-bs-toggle="dropdown">
+                            <i class="fas fa-bell fa-lg"></i>
+                            {% if notifications %}
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                {{ notifications|length }}
+                            </span>
+                            {% endif %}
+                    </button>
+                        <div class="dropdown-menu dropdown-menu-end shadow-sm" style="width: 300px;">
+                            <h6 class="dropdown-header d-flex justify-content-between align-items-center">
+                                <span>Bildirimler</span>
+                                {% if notifications %}
+                                <a href="{{ url_for('admin.clear_notifications') }}" class="text-danger small">
+                                    <i class="fas fa-trash-alt"></i> Temizle
+                                </a>
+                                {% endif %}
+                            </h6>
+                            {% if notifications %}
+                                {% for notification in notifications %}
+                                <a class="dropdown-item notification-item" href="{{ notification.link }}">
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-shrink-0">
+                                            <i class="fas {{ notification.icon }} {{ notification.icon_color }}"></i>
+                                        </div>
+                                        <div class="flex-grow-1 ms-2">
+                                            <p class="mb-0">{{ notification.message }}</p>
+                                            <small class="text-muted">{{ notification.created_at|timeago }}</small>
+                                        </div>
+                                        {% if not notification.is_read %}
+                                        <div class="flex-shrink-0 ms-2">
+                                            <span class="badge bg-primary rounded-pill">Yeni</span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                        </a>
+                                {% endfor %}
+                        <div class="dropdown-divider"></div>
+                                <a class="dropdown-item text-center" href="{{ url_for('admin.notifications') }}">
+                                    Tüm bildirimleri gör
+                                </a>
+                            {% else %}
+                                <div class="dropdown-item text-center text-muted py-3">
+                                    <i class="fas fa-bell-slash fa-2x mb-2"></i>
+                                    <p class="mb-0">Bildirim bulunmuyor</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Search -->
+                    <form class="d-none d-lg-flex me-3">
+                        <div class="input-group">
+                            <input type="search" class="form-control" placeholder="Ara...">
+                            <button class="btn btn-outline-secondary" type="submit">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Page Content -->
+        <div class="container-fluid py-4">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </div>
+</div>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html> 

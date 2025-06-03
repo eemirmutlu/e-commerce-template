@@ -1,0 +1,207 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Kategori Yönetimi{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">Kategori Yönetimi</h1>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+            <i class="fas fa-plus me-2"></i>Yeni Kategori Ekle
+        </button>
+    </div>
+
+    <!-- Categories Table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>İkon</th>
+                            <th>Kategori Adı</th>
+                            <th>Açıklama</th>
+                            <th>Ürün Sayısı</th>
+                            <th>Durum</th>
+                            <th>İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for category in categories %}
+                        <tr>
+                            <td>{{ category.id }}</td>
+                            <td>
+                                <i class="fas {{ category.icon }} fa-2x" style="color: {{ category.color }}"></i>
+                            </td>
+                            <td>
+                                <div class="fw-bold">{{ category.name }}</div>
+                                <small class="text-muted">Slug: {{ category.slug }}</small>
+                            </td>
+                            <td>{{ category.description[:100] }}{% if category.description|length > 100 %}...{% endif %}</td>
+                            <td>
+                                <span class="badge bg-primary">{{ category.products|length }}</span>
+                            </td>
+                            <td>
+                                <span class="badge {% if category.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ 'Aktif' if category.is_active else 'Pasif' }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-primary"
+                                            onclick="editCategory({{ category.id }}, '{{ category.name }}', '{{ category.description }}', '{{ category.icon }}', '{{ category.color }}', {{ category.is_active|tojson }})">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-danger"
+                                            onclick="deleteCategory({{ category.id }})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Category Modal -->
+<div class="modal fade" id="addCategoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="addCategoryForm" method="POST" action="{{ url_for('admin.add_category') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Yeni Kategori Ekle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Kategori Adı</label>
+                        <input type="text" name="name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Açıklama</label>
+                        <textarea name="description" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">İkon</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-icons"></i></span>
+                            <input type="text" name="icon" class="form-control" placeholder="fa-tag" required>
+                        </div>
+                        <small class="text-muted">Font Awesome ikon sınıfı (örn: fa-tag, fa-mobile-alt)</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Renk</label>
+                        <input type="color" name="color" class="form-control form-control-color" value="#3498db">
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" name="is_active" class="form-check-input" id="isActive" checked>
+                            <label class="form-check-label" for="isActive">Aktif</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Category Modal -->
+<div class="modal fade" id="editCategoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="editCategoryForm" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Kategori Düzenle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Kategori Adı</label>
+                        <input type="text" name="name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Açıklama</label>
+                        <textarea name="description" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">İkon</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-icons"></i></span>
+                            <input type="text" name="icon" class="form-control" required>
+                        </div>
+                        <small class="text-muted">Font Awesome ikon sınıfı (örn: fa-tag, fa-mobile-alt)</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Renk</label>
+                        <input type="color" name="color" class="form-control form-control-color">
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" name="is_active" class="form-check-input" id="editIsActive">
+                            <label class="form-check-label" for="editIsActive">Aktif</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function editCategory(id, name, description, icon, color, isActive) {
+    const form = document.getElementById('editCategoryForm');
+    form.action = `{{ url_for('admin.edit_category', category_id=0) }}`.replace('0', id);
+    
+    form.querySelector('[name="name"]').value = name;
+    form.querySelector('[name="description"]').value = description;
+    form.querySelector('[name="icon"]').value = icon;
+    form.querySelector('[name="color"]').value = color;
+    form.querySelector('[name="is_active"]').checked = isActive;
+    
+    new bootstrap.Modal(document.getElementById('editCategoryModal')).show();
+}
+
+function deleteCategory(categoryId) {
+    if (confirm('Bu kategoriyi silmek istediğinizden emin misiniz?')) {
+        fetch(`{{ url_for('admin.delete_category', category_id=0) }}`.replace('0', categoryId), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message || 'Bir hata oluştu.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Bir hata oluştu.');
+        });
+    }
+}
+</script>
+{% endblock %} 

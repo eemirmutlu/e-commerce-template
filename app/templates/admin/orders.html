@@ -1,0 +1,322 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Siparişler{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Başlık ve Filtreler -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">Siparişler</h2>
+            <p class="text-muted mb-0">Tüm siparişleri görüntüleyin ve yönetin</p>
+        </div>
+        <div class="d-flex gap-3">
+            <div class="input-group" style="width: 300px;">
+                <span class="input-group-text bg-white border-end-0">
+                    <i class="fas fa-search text-muted"></i>
+                </span>
+                <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Sipariş ara...">
+            </div>
+            <select class="form-select" id="statusFilter" style="width: auto;">
+                <option value="">Tüm Durumlar</option>
+                <option value="pending">Beklemede</option>
+                <option value="processing">İşleniyor</option>
+                <option value="shipped">Kargoda</option>
+                <option value="delivered">Teslim Edildi</option>
+                <option value="cancelled">İptal Edildi</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- İstatistik Kartları -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="stats-icon bg-primary bg-opacity-10 text-primary">
+                                <i class="fas fa-shopping-cart"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-1">Toplam Sipariş</h6>
+                            <h4 class="mb-0">{{ orders|length }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="stats-icon bg-warning bg-opacity-10 text-warning">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-1">Bekleyen Sipariş</h6>
+                            <h4 class="mb-0">{{ orders|selectattr('status', 'equalto', 'pending')|list|length }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="stats-icon bg-success bg-opacity-10 text-success">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-1">Tamamlanan Sipariş</h6>
+                            <h4 class="mb-0">{{ orders|selectattr('status', 'in', ['delivered', 'shipped'])|list|length }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="stats-icon bg-danger bg-opacity-10 text-danger">
+                                <i class="fas fa-times-circle"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-1">İptal Edilen</h6>
+                            <h4 class="mb-0">{{ orders|selectattr('status', 'equalto', 'cancelled')|list|length }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sipariş Tablosu -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            {% if orders %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="border-0">Sipariş No</th>
+                            <th class="border-0">Müşteri</th>
+                            <th class="border-0">Tarih</th>
+                            <th class="border-0 text-end">Tutar</th>
+                            <th class="border-0">Durum</th>
+                            <th class="border-0 text-end">İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="order-icon me-2">
+                                        <i class="fas fa-shopping-bag"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-medium">#{{ order.id }}</div>
+                                        <small class="text-muted">{{ order.items|length }} ürün</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="user-avatar me-2">
+                                        <div class="avatar-circle">
+                                            <span class="avatar-text">{{ order.user.username[:2].upper() }}</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="fw-medium">{{ order.user.username }}</div>
+                                        <small class="text-muted">{{ order.user.email }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="fw-medium">{{ order.created_at.strftime('%d.%m.%Y') }}</div>
+                                <small class="text-muted">{{ order.created_at.strftime('%H:%M') }}</small>
+                            </td>
+                            <td class="text-end">
+                                <div class="fw-medium">{{ "%.2f"|format(order.total_amount) }} ₺</div>
+                                <small class="text-muted">{{ order.items|length }} ürün</small>
+                            </td>
+                            <td>
+                                <select class="form-select form-select-sm status-select" 
+                                        data-order-id="{{ order.id }}"
+                                        style="width: auto;">
+                                    <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>Beklemede</option>
+                                    <option value="processing" {% if order.status == 'processing' %}selected{% endif %}>İşleniyor</option>
+                                    <option value="shipped" {% if order.status == 'shipped' %}selected{% endif %}>Kargoda</option>
+                                    <option value="delivered" {% if order.status == 'delivered' %}selected{% endif %}>Teslim Edildi</option>
+                                    <option value="cancelled" {% if order.status == 'cancelled' %}selected{% endif %}>İptal Edildi</option>
+                                </select>
+                            </td>
+                            <td class="text-end">
+                                <a href="{{ url_for('admin.order_detail', order_id=order.id) }}" 
+                                   class="btn btn-sm btn-light">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="p-5 text-center text-muted">
+                <div class="empty-state mb-3">
+                    <i class="fas fa-shopping-cart fa-3x"></i>
+                </div>
+                <h5>Henüz sipariş bulunmuyor</h5>
+                <p class="mb-0">Sistemde kayıtlı hiç sipariş bulunmamaktadır.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.stats-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.order-icon {
+    width: 36px;
+    height: 36px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+}
+
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    background: #e9ecef;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.avatar-text {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #6c757d;
+}
+
+.empty-state {
+    color: #dee2e6;
+}
+
+.table > :not(caption) > * > * {
+    padding: 1rem;
+}
+
+.form-select-sm {
+    padding: 0.25rem 2rem 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.btn-light {
+    background-color: #f8f9fa;
+    border-color: #f8f9fa;
+}
+
+.btn-light:hover {
+    background-color: #e9ecef;
+    border-color: #e9ecef;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Status değişikliği
+    document.querySelectorAll('.status-select').forEach(select => {
+        select.addEventListener('change', function() {
+            const orderId = this.dataset.orderId;
+            const newStatus = this.value;
+            
+            fetch('{{ url_for("admin.update_order_status") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    order_id: orderId,
+                    status: newStatus
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Başarılı güncelleme
+                    const toast = new bootstrap.Toast(document.createElement('div'));
+                    toast.show();
+                } else {
+                    // Hata durumunda eski değere geri dön
+                    this.value = this.dataset.originalValue;
+                    alert('Sipariş durumu güncellenirken bir hata oluştu.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                this.value = this.dataset.originalValue;
+                alert('Bir hata oluştu.');
+            });
+        });
+    });
+
+    // Arama ve filtreleme
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const searchButton = document.getElementById('searchButton');
+    const table = document.querySelector('table');
+    const rows = table.querySelectorAll('tbody tr');
+
+    function filterTable() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const statusValue = statusFilter.value.toLowerCase();
+
+        rows.forEach(row => {
+            const orderId = row.cells[0].textContent.toLowerCase();
+            const customer = row.cells[1].textContent.toLowerCase();
+            const status = row.cells[4].querySelector('select').value.toLowerCase();
+
+            const matchesSearch = orderId.includes(searchTerm) || customer.includes(searchTerm);
+            const matchesStatus = !statusValue || status === statusValue;
+
+            row.style.display = matchesSearch && matchesStatus ? '' : 'none';
+        });
+    }
+
+    searchButton.addEventListener('click', filterTable);
+    searchInput.addEventListener('keyup', filterTable);
+    statusFilter.addEventListener('change', filterTable);
+});
+</script>
+{% endblock %} 

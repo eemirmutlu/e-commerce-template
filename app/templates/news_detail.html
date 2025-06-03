@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}{{ news.title }} - TechStore{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-5">
+    <!-- Hero Section -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="glass-card p-5">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-4">
+                        <li class="breadcrumb-item">
+                            <a href="{{ url_for('main.index') }}" class="text-decoration-none">Ana Sayfa</a>
+                        </li>
+                        <li class="breadcrumb-item">
+                            <a href="{{ url_for('main.news') }}" class="text-decoration-none">Haberler</a>
+                        </li>
+                        <li class="breadcrumb-item active">{{ news.title }}</li>
+                    </ol>
+                </nav>
+                
+                <div class="row align-items-center">
+                    <div class="col-lg-8">
+                        <h1 class="display-4 text-gradient mb-4">{{ news.title }}</h1>
+                        <div class="d-flex align-items-center text-muted mb-4">
+                            <i class="far fa-calendar-alt me-2"></i>
+                            <span>{{ news.created_at.strftime('%d %B %Y') }}</span>
+                            {% if news.is_published %}
+                            <span class="badge bg-success ms-3">Yayında</span>
+                            {% else %}
+                            <span class="badge bg-warning ms-3">Taslak</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Haber İçeriği -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="glass-card p-4 mb-4">
+                {% if news.image_path %}
+                <img src="{{ url_for('static', filename=news.image_path) }}" 
+                     class="img-fluid rounded-3 mb-4" 
+                     alt="{{ news.title }}">
+                {% endif %}
+                
+                <div class="news-content">
+                    {{ news.content|safe }}
+                </div>
+            </div>
+
+            <!-- Paylaşım Butonları -->
+            <div class="glass-card p-4 mb-4">
+                <h5 class="mb-3">Bu Haberi Paylaş</h5>
+                <div class="d-flex gap-3">
+                    <a href="#" class="btn btn-outline-primary" onclick="shareOnFacebook()">
+                        <i class="fab fa-facebook-f"></i>
+                        Facebook
+                    </a>
+                    <a href="#" class="btn btn-outline-info" onclick="shareOnTwitter()">
+                        <i class="fab fa-twitter"></i>
+                        Twitter
+                    </a>
+                    <a href="#" class="btn btn-outline-danger" onclick="shareOnWhatsApp()">
+                        <i class="fab fa-whatsapp"></i>
+                        WhatsApp
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Yan Panel -->
+        <div class="col-lg-4">
+            <!-- Son Haberler -->
+            <div class="glass-card p-4 mb-4">
+                <h4 class="mb-4">Son Haberler</h4>
+                {% for recent_news in recent_news %}
+                <div class="recent-news-item mb-3">
+                    <a href="{{ url_for('main.news_detail', news_id=recent_news.id) }}" 
+                       class="text-decoration-none">
+                        <div class="d-flex align-items-center">
+                            {% if recent_news.image_path %}
+                            <img src="{{ url_for('static', filename=recent_news.image_path) }}" 
+                                 class="rounded-3 me-3" 
+                                 alt="{{ recent_news.title }}"
+                                 style="width: 80px; height: 60px; object-fit: cover;">
+                            {% endif %}
+                            <div>
+                                <h6 class="mb-1">{{ recent_news.title }}</h6>
+                                <small class="text-muted">
+                                    {{ recent_news.created_at.strftime('%d %B %Y') }}
+                                </small>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Kategoriler -->
+            <div class="glass-card p-4">
+                <h4 class="mb-4">Kategoriler</h4>
+                <div class="d-flex flex-wrap gap-2">
+                    {% for category in categories %}
+                    <a href="{{ url_for('main.products', category=category.id) }}" 
+                       class="btn btn-outline-primary">
+                        <i class="fas {{ category.icon }} me-2"></i>
+                        {{ category.name }}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.news-content {
+    font-size: 1.1rem;
+    line-height: 1.8;
+}
+
+.news-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.5rem;
+    margin: 1rem 0;
+}
+
+.news-content p {
+    margin-bottom: 1.5rem;
+}
+
+.recent-news-item {
+    transition: all 0.3s ease;
+}
+
+.recent-news-item:hover {
+    transform: translateX(5px);
+}
+
+.btn-outline-primary,
+.btn-outline-info,
+.btn-outline-danger {
+    transition: all 0.3s ease;
+}
+
+.btn-outline-primary:hover,
+.btn-outline-info:hover,
+.btn-outline-danger:hover {
+    transform: translateY(-3px);
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function shareOnFacebook() {
+    const url = encodeURIComponent(window.location.href);
+    const title = encodeURIComponent('{{ news.title }}');
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${title}`, '_blank');
+}
+
+function shareOnTwitter() {
+    const url = encodeURIComponent(window.location.href);
+    const title = encodeURIComponent('{{ news.title }}');
+    window.open(`https://twitter.com/intent/tweet?url=${url}&text=${title}`, '_blank');
+}
+
+function shareOnWhatsApp() {
+    const url = encodeURIComponent(window.location.href);
+    const title = encodeURIComponent('{{ news.title }}');
+    window.open(`https://wa.me/?text=${title}%20${url}`, '_blank');
+}
+</script>
+{% endblock %} 

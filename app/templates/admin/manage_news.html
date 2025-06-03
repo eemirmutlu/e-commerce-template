@@ -1,0 +1,165 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Haber Yönetimi{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">Haber Yönetimi</h1>
+        <a href="{{ url_for('admin.add_news') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Yeni Haber Ekle
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Durum</label>
+                    <select name="status" class="form-select">
+                        <option value="">Tümü</option>
+                        <option value="published" {% if request.args.get('status') == 'published' %}selected{% endif %}>Yayında</option>
+                        <option value="draft" {% if request.args.get('status') == 'draft' %}selected{% endif %}>Taslak</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Arama</label>
+                    <input type="text" name="search" class="form-control" placeholder="Haber başlığı veya içeriği..." 
+                           value="{{ request.args.get('search', '') }}">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search me-2"></i>Filtrele
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- News Table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Görsel</th>
+                            <th>Başlık</th>
+                            <th>Yazar</th>
+                            <th>Tarih</th>
+                            <th>Durum</th>
+                            <th>İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for news in news_list %}
+                        <tr>
+                            <td>{{ news.id }}</td>
+                            <td>
+                                {% if news.image_url %}
+                                <img src="{{ url_for('static', filename='uploads/' + news.image_url) }}" 
+                                     alt="{{ news.title }}" 
+                                     class="img-thumbnail" 
+                                     style="width: 50px; height: 50px; object-fit: cover;">
+                                {% else %}
+                                <div class="bg-light d-flex align-items-center justify-content-center" 
+                                     style="width: 50px; height: 50px;">
+                                    <i class="fas fa-image text-muted"></i>
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="fw-bold">{{ news.title }}</div>
+                                <small class="text-muted">{{ news.content[:50] }}...</small>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <img src="{{ news.author.avatar_url or url_for('static', filename='images/no-image.jpg') }}" 
+                                         alt="{{ news.author.username }}" 
+                                         class="rounded-circle me-2"
+                                         style="width: 32px; height: 32px; object-fit: cover;">
+                                    <span>{{ news.author.username }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div>{{ news.created_at.strftime('%d.%m.%Y') }}</div>
+                                <small class="text-muted">{{ news.created_at.strftime('%H:%M') }}</small>
+                            </td>
+                            <td>
+                                <span class="badge {% if news.is_published %}bg-success{% else %}bg-warning{% endif %}">
+                                    {{ 'Yayında' if news.is_published else 'Taslak' }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{{ url_for('admin.edit_news', id=news.id) }}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-danger"
+                                            onclick="deleteNews({{ news.id }})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if pagination %}
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% for page in pagination.iter_pages() %}
+                        {% if page %}
+                            <li class="page-item {% if page == pagination.page %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('admin.manage_news', page=page, **request.args) }}">
+                                    {{ page }}
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function deleteNews(newsId) {
+    if (confirm('Bu haberi silmek istediğinizden emin misiniz?')) {
+        fetch(`{{ url_for('admin.delete_news', news_id=0) }}`.replace('0', newsId), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message || 'Bir hata oluştu.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Bir hata oluştu.');
+        });
+    }
+}
+</script>
+{% endblock %} 

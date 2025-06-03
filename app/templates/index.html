@@ -1,0 +1,691 @@
+{% extends "base.html" %}
+
+{% block title %}Ana Sayfa - TechStore{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section text-white text-center py-5 mb-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6 text-lg-start mb-5 mb-lg-0">
+                <h1 class="display-4 fw-bold mb-4 animate-fade-in">
+                    Geleceğin Alışveriş Deneyimi
+                </h1>
+                <p class="lead mb-4 animate-fade-in" style="animation-delay: 0.2s">
+                    Modern tasarım, hızlı teslimat ve güvenli ödeme seçenekleriyle 
+                    alışverişinizi keyifli bir deneyime dönüştürün.
+                </p>
+                <div class="d-flex gap-3 animate-fade-in" style="animation-delay: 0.4s">
+                    <a href="{{ url_for('main.products') }}" class="btn btn-glow">
+                        <i class="fas fa-shopping-bag me-2"></i>Alışverişe Başla
+                    </a>
+                    <a href="{{ url_for('main.about') }}" class="btn btn-outline-light">
+                        <i class="fas fa-info-circle me-2"></i>Daha Fazla Bilgi
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="position-relative float-animation">
+                    <img src="{{ url_for('static', filename='img/hero-image.png') }}" 
+                         alt="Hero Image" 
+                         class="img-fluid rounded-4 shadow-lg">
+                    <div class="position-absolute top-0 start-0 w-100 h-100 rounded-4"
+                         style="background: linear-gradient(45deg, rgba(37, 99, 235, 0.2), rgba(124, 58, 237, 0.2));">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Öne Çıkan Kategoriler -->
+<section class="mb-5">
+    <div class="container">
+        <h2 class="text-center mb-4">Popüler Kategoriler</h2>
+        <div class="row g-4">
+            {% for category in categories[:4] %}
+            <div class="col-md-4">
+                <a href="{{ url_for('main.products', category=category.id) }}" class="text-decoration-none">
+                    <div class="glass-card h-100 p-4 text-center">
+                        <div class="mb-3">
+                            <i class="fas {{ category.icon }} fa-3x" style="background: var(--gradient-primary); -webkit-background-clip: text; background-clip: text; color: transparent;"></i>
+                        </div>
+                        <h5 class="mb-2">{{ category.name }}</h5>
+                        <p class="text-muted mb-0">{{ category.description[:60] }}...</p>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Öne Çıkan Ürünler -->
+<section class="mb-5">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Öne Çıkan Ürünler</h2>
+            <a href="{{ url_for('main.products') }}" class="btn btn-outline-primary">
+                Tümünü Gör
+                <i class="fas fa-arrow-right ms-2"></i>
+            </a>
+        </div>
+        <div class="row g-4 overflow-auto-mobile">
+            {% for product in products[:4] %}
+            <div class="col-6 col-sm-4 col-md-3 flex-shrink-0-mobile">
+                <div class="product-card-modern">
+                    <div class="product-badges">
+                        {% if product.discount_percent %}
+                        <span class="badge bg-danger">%{{ product.discount_percent }}</span>
+                        {% endif %}
+                        {% if product.is_new %}
+                        <span class="badge bg-success">Yeni</span>
+                        {% endif %}
+                    </div>
+                    <div class="product-image">
+                        <a href="{{ url_for('main.product_detail', product_id=product.id) }}">
+                            {% if product.image_url %}
+                            <img src="{{ url_for('static', filename='uploads/' + product.image_url) }}" 
+                                 alt="{{ product.name }}"
+                                 class="img-fluid">
+                            {% else %}
+                            <div class="no-image">
+                                <i class="fas fa-image"></i>
+                            </div>
+                            {% endif %}
+                        </a>
+                        <div class="product-actions">
+                            <button class="btn-action" onclick="addToCart({{ product.id }}, this)" title="Sepete Ekle">
+                                <i class="fas fa-cart-plus"></i>
+                            </button>
+                            <button class="btn-action {% if current_user.is_authenticated and current_user.has_liked_product(product) %}liked{% endif %}"
+                                    onclick="toggleLike({{ product.id }})" 
+                                    {% if not current_user.is_authenticated %}disabled{% endif %}
+                                    title="Favorilere Ekle">
+                                <i class="fas fa-heart"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="product-info">
+                        <div class="product-category">{{ product.category.name }}</div>
+                        <h3 class="product-title">
+                            <a href="{{ url_for('main.product_detail', product_id=product.id) }}">{{ product.name }}</a>
+                        </h3>
+                        <div class="product-rating">
+                            {% for i in range(5) %}
+                            <i class="fas fa-star {{ 'text-warning' if i < product.rating else 'text-muted' }}"></i>
+                            {% endfor %}
+                            <span class="rating-count">({{ product.review_count }})</span>
+                        </div>
+                        <div class="product-price">
+                            {% if product.discount_percent %}
+                            <span class="original-price">₺{{ "%.2f"|format(product.original_price) }}</span>
+                            {% endif %}
+                            <span class="current-price">₺{{ "%.2f"|format(product.current_price) }}</span>
+                        </div>
+                        <div class="product-stock">
+                            {% if product.stock > 0 %}
+                            <span class="text-success">Stokta</span>
+                            {% else %}
+                            <span class="text-danger">Stokta Yok</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Özellikler -->
+<section class="mb-5">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="neu-card p-4 text-center h-100">
+                    <div class="mb-3">
+                        <i class="fas fa-truck fa-3x" style="background: var(--gradient-primary); -webkit-background-clip: text; background-clip: text; color: transparent;"></i>
+                    </div>
+                    <h4>Hızlı Teslimat</h4>
+                    <p class="text-muted mb-0">
+                        24 saat içinde kargoya teslim ve güvenli teslimat garantisi.
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="neu-card p-4 text-center h-100">
+                    <div class="mb-3">
+                        <i class="fas fa-shield-alt fa-3x" style="background: var(--gradient-primary); -webkit-background-clip: text; background-clip: text; color: transparent;"></i>
+                    </div>
+                    <h4>Güvenli Ödeme</h4>
+                    <p class="text-muted mb-0">
+                        256-bit SSL sertifikası ile güvenli ödeme işlemleri.
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="neu-card p-4 text-center h-100">
+                    <div class="mb-3">
+                        <i class="fas fa-headset fa-3x" style="background: var(--gradient-primary); -webkit-background-clip: text; background-clip: text; color: transparent;"></i>
+                    </div>
+                    <h4>7/24 Destek</h4>
+                    <p class="text-muted mb-0">
+                        Uzman müşteri hizmetleri ekibimiz her zaman yanınızda.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Kampanyalar -->
+<section class="mb-5">
+    <div class="container">
+        <h2 class="text-center mb-4">Güncel Kampanyalar</h2>
+        <div class="row g-4">
+            {% for campaign in campaigns %}
+            <div class="col-md-6">
+                <div class="glass-card p-4 h-100">
+                    <div class="row align-items-center">
+                        <div class="col-md-4">
+                            <img src="{{ campaign.image_url }}" 
+                                 alt="{{ campaign.title }}" 
+                                 class="img-fluid rounded-3">
+                        </div>
+                        <div class="col-md-8">
+                            <h4 class="mb-2">{{ campaign.title }}</h4>
+                            <p class="text-muted mb-3">{{ campaign.description }}</p>
+                            <a href="{{ campaign.link }}" class="btn btn-glow">
+                                Detayları Gör
+                                <i class="fas fa-arrow-right ms-2"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Müşteri Yorumları -->
+<section class="mb-5">
+    <div class="container">
+        <h2 class="text-center mb-4">Müşteri Yorumları</h2>
+        <div class="row g-4">
+            {% for review in reviews %}
+            <div class="col-md-4">
+                <div class="glass-card p-4 h-100">
+                    <div class="d-flex align-items-center mb-3">
+                        <img src="{{ review.user.avatar_url }}" 
+                             alt="{{ review.user.username }}" 
+                             class="rounded-circle me-3"
+                             style="width: 50px; height: 50px; object-fit: cover;">
+                        <div>
+                            <h5 class="mb-0">{{ review.user.username }}</h5>
+                            <div class="text-warning">
+                                {% for _ in range(review.rating) %}
+                                <i class="fas fa-star"></i>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-muted mb-0">{{ review.comment }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Bülten Aboneliği -->
+<section class="mb-5">
+    <div class="container">
+        <div class="glass-card p-5 text-center">
+            <h2 class="mb-4">Kampanyalardan Haberdar Olun</h2>
+            <p class="text-muted mb-4">
+                En yeni ürünler ve özel kampanyalardan ilk siz haberdar olun.
+            </p>
+            <form class="row g-3 justify-content-center">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <input type="email" 
+                               class="form-control input-glow" 
+                               placeholder="E-posta adresiniz"
+                               required>
+                        <button type="submit" class="btn btn-glow">
+                            <i class="fas fa-paper-plane me-2"></i>Abone Ol
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Modern Product Card */
+.product-card-modern {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+}
+
+.product-card-modern:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.product-badges {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 3;
+    display: flex;
+    gap: 5px;
+}
+
+.product-badges .badge {
+    padding: 0.5rem 0.75rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+}
+
+.product-image {
+    position: relative;
+    width: 100%;
+    padding-top: 100%;
+    overflow: hidden;
+    background: #f8f9fa;
+}
+
+.product-image a {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.product-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.product-card-modern:hover .product-image img {
+    transform: scale(1.05);
+}
+
+.product-actions {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    background: rgba(255,255,255,0) !important;
+    backdrop-filter: blur(5px);
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+    z-index: 2;
+}
+
+.product-card-modern:hover .product-actions {
+    transform: translateY(0);
+}
+
+.btn-action {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: #fff;
+    color: #495057;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: all 0.2s;
+}
+
+.btn-action:hover {
+    background: var(--primary-color);
+    color: #fff;
+    transform: translateY(-2px);
+}
+
+.btn-action.liked {
+    background: #dc3545;
+    color: #fff;
+}
+
+.product-info {
+    padding: 15px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+}
+
+.product-category {
+    font-size: 0.9rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.product-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.product-title a {
+    color: #212529;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.product-title a:hover {
+    color: var(--primary-color);
+}
+
+.product-rating {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin: 0.5rem 0;
+}
+
+.product-rating .fa-star {
+    font-size: 0.9rem;
+}
+
+.rating-count {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-left: 0.25rem;
+}
+
+.product-price {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0.5rem 0;
+}
+
+.original-price {
+    font-size: 0.9rem;
+    color: #6c757d;
+    text-decoration: line-through;
+}
+
+.current-price {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.product-stock {
+    font-size: 0.9rem;
+    margin-top: auto;
+}
+
+.no-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    color: #adb5bd;
+    font-size: 2rem;
+}
+
+/* Overflow sadece mobilde */
+@media (max-width: 767px) {
+    .overflow-auto-mobile {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE and Edge */
+    }
+    .overflow-auto-mobile::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Opera */
+    }
+    .flex-shrink-0-mobile {
+        flex-shrink: 0;
+    }
+}
+
+@media (min-width: 768px) {
+    .overflow-auto-mobile {
+        flex-wrap: wrap;
+    }
+    .flex-shrink-0-mobile {
+        flex-shrink: 1;
+    }
+}
+
+/* Sepete Ekleme Animasyonu ve ilgili stilleri kaldırıyorum */
+.flying-product {
+    display: none;
+}
+
+/* Toast bildirimleri için stil */
+.toast-container {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    z-index: 9999;
+}
+
+.toast {
+    background: white;
+    border: none;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    min-width: 250px;
+}
+
+.toast.bg-success {
+    background-color: #28a745 !important;
+    color: white !important;
+}
+
+.toast.bg-error {
+    background-color: #dc3545 !important;
+    color: white !important;
+}
+
+.toast.bg-warning {
+    background-color: #ffc107 !important;
+    color: #212529 !important;
+}
+
+.toast.bg-info {
+    background-color: #17a2b8 !important;
+    color: white !important;
+}
+
+/* Sepet sayacı için stil */
+.cart-count {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background-color: #dc3545;
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Animasyonlu Elementler
+    document.addEventListener('DOMContentLoaded', function() {
+        const animatedElements = document.querySelectorAll('.animate-fade-in');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        });
+
+        animatedElements.forEach(element => {
+            element.style.opacity = '0';
+            element.style.transform = 'translateY(20px)';
+            observer.observe(element);
+        });
+    });
+
+    // Kart Hover Efekti
+    const cards = document.querySelectorAll('.card');
+    cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-10px)';
+            this.style.boxShadow = '0 20px 25px rgba(0, 0, 0, 0.15)';
+        });
+
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+        });
+    });
+
+    function toggleLike(productId) {
+        const button = event.currentTarget;
+        if (button.disabled) {
+            showToast('warning', 'Ürünü beğenmek için giriş yapmalısınız.');
+            return;
+        }
+        
+        fetch(`/product/${productId}/like`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                button.classList.toggle('liked');
+                // Tüm sayfadaki aynı ürünün like butonlarını güncelle
+                document.querySelectorAll(`button[onclick="toggleLike(${productId})"]`).forEach(btn => {
+                    btn.classList.toggle('liked', button.classList.contains('liked'));
+                });
+                if (data.action === 'liked') {
+                    showToast('info', 'Ürün favorilere eklendi!');
+                } else {
+                    showToast('info', 'Ürün favorilerden çıkarıldı.');
+                }
+            } else {
+                showToast('error', data.message || 'Bir hata oluştu.');
+            }
+        })
+        .catch(error => {
+            showToast('error', 'Bir hata oluştu.');
+        });
+    }
+
+    function addToCart(productId, button) {
+        fetch('/cart/add', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                product_id: productId,
+                quantity: 1
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('success', 'Ürün sepete eklendi!');
+                updateCartCount(data.cart_count);
+            } else {
+                showToast('error', data.message || 'Bir hata oluştu.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('error', 'Bir hata oluştu.');
+        });
+    }
+
+    function showToast(type, message) {
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-white bg-${type} border-0`;
+        toast.setAttribute('role', 'alert');
+        toast.setAttribute('aria-live', 'assertive');
+        toast.setAttribute('aria-atomic', 'true');
+        
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        
+        const container = document.createElement('div');
+        container.className = 'toast-container';
+        container.appendChild(toast);
+        document.body.appendChild(container);
+        
+        const bsToast = new bootstrap.Toast(toast, {
+            animation: true,
+            autohide: true,
+            delay: 3000
+        });
+        bsToast.show();
+        
+        toast.addEventListener('hidden.bs.toast', () => {
+            container.remove();
+        });
+    }
+
+    function updateCartCount(count) {
+        const cartCount = document.querySelector('.cart-count');
+        if (cartCount) {
+            cartCount.textContent = count;
+            cartCount.classList.add('animate__animated', 'animate__bounceIn');
+            setTimeout(() => {
+                cartCount.classList.remove('animate__animated', 'animate__bounceIn');
+            }, 1000);
+        }
+    }
+</script>
+{% endblock %} 

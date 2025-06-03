@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}Sipariş Onayı{% endblock %}
+
+{% block extra_css %}
+<style>
+.order-confirmation {
+    text-align: center;
+    padding: 40px 0;
+}
+
+.order-confirmation .success-icon {
+    font-size: 64px;
+    color: #28a745;
+    margin-bottom: 20px;
+}
+
+.order-confirmation h1 {
+    color: #28a745;
+    margin-bottom: 20px;
+}
+
+.order-details {
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 30px;
+}
+
+.order-details .detail-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.order-details .detail-item:last-child {
+    border-bottom: none;
+}
+
+.order-details .detail-label {
+    font-weight: 500;
+    color: #6c757d;
+}
+
+.order-details .detail-value {
+    font-weight: 600;
+}
+
+.timeline {
+    position: relative;
+    padding: 20px 0;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 100%;
+    background-color: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 30px;
+}
+
+.timeline-item:last-child {
+    margin-bottom: 0;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: #fff;
+    border: 2px solid #28a745;
+    z-index: 1;
+}
+
+.timeline-item.active::before {
+    background-color: #28a745;
+}
+
+.timeline-content {
+    position: relative;
+    width: calc(50% - 30px);
+    padding: 15px;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.timeline-item:nth-child(odd) .timeline-content {
+    margin-left: auto;
+}
+
+.timeline-item:nth-child(even) .timeline-content {
+    margin-right: auto;
+}
+
+.timeline-content h5 {
+    margin-bottom: 10px;
+    color: #28a745;
+}
+
+.timeline-content p {
+    margin-bottom: 0;
+    color: #6c757d;
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="order-confirmation animate-fade-in">
+        <div class="success-icon">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <h1>Siparişiniz Alındı!</h1>
+        <p class="lead">Sipariş numaranız: <strong>#{{ order.id }}</strong></p>
+        <p class="text-muted">Siparişinizle ilgili detayları aşağıda bulabilirsiniz.</p>
+        
+        <div class="row justify-content-center mt-4">
+            <div class="col-md-8">
+                <div class="order-details">
+                    <div class="detail-item">
+                        <span class="detail-label">Sipariş Tarihi:</span>
+                        <span class="detail-value">{{ order.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Teslimat Adresi:</span>
+                        <span class="detail-value">
+                            {{ order.address.name }}<br>
+                            {{ order.address.full_address }}<br>
+                            {{ order.address.city }}, {{ order.address.postal_code }}
+                        </span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Ödeme Yöntemi:</span>
+                        <span class="detail-value">
+                            {{ order.credit_card.name }}<br>
+                            **** **** **** {{ order.credit_card.card_number[-4:] }}
+                        </span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Toplam Tutar:</span>
+                        <span class="detail-value">₺{{ "%.2f"|format(order.total_amount) }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row justify-content-center mt-5">
+            <div class="col-md-8">
+                <div class="timeline">
+                    <div class="timeline-item active">
+                        <div class="timeline-content">
+                            <h5>Sipariş Alındı</h5>
+                            <p>Siparişiniz başarıyla oluşturuldu.</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-content">
+                            <h5>Hazırlanıyor</h5>
+                            <p>Siparişiniz hazırlanmaya başlanacak.</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-content">
+                            <h5>Kargoya Verildi</h5>
+                            <p>Siparişiniz kargoya verilecek.</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-content">
+                            <h5>Teslim Edildi</h5>
+                            <p>Siparişiniz teslim edilecek.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-5">
+            <a href="{{ url_for('main.products') }}" class="btn btn-outline-primary me-2">
+                <i class="fas fa-shopping-bag me-2"></i>Alışverişe Devam Et
+            </a>
+            <a href="{{ url_for('main.view_orders') }}" class="btn btn-primary">
+                <i class="fas fa-list me-2"></i>Siparişlerimi Görüntüle
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %} 

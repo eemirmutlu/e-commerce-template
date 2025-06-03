@@ -1,0 +1,578 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Kullanıcı Detayları - {{ user.username }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.user-header {
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.user-header .user-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background-color: #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    color: #6c757d;
+    margin-bottom: 20px;
+}
+
+.user-header .user-info h2 {
+    margin-bottom: 10px;
+    color: #2c3e50;
+}
+
+.user-header .user-info p {
+    color: #6c757d;
+    margin-bottom: 5px;
+}
+
+.user-header .user-stats {
+    display: flex;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.user-header .stat-item {
+    text-align: center;
+    padding: 15px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    flex: 1;
+}
+
+.user-header .stat-item .stat-value {
+    font-size: 24px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 5px;
+}
+
+.user-header .stat-item .stat-label {
+    color: #6c757d;
+    font-size: 14px;
+}
+
+.section-title {
+    color: #2c3e50;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.address-card, .credit-card {
+    background-color: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: transform 0.3s ease;
+}
+
+.address-card:hover, .credit-card:hover {
+    transform: translateY(-5px);
+}
+
+.address-card .card-header, .credit-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.address-card .card-header h5, .credit-card .card-header h5 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+.address-card .card-header .badge, .credit-card .card-header .badge {
+    font-size: 12px;
+    padding: 5px 10px;
+}
+
+.address-card .card-body p, .credit-card .card-body p {
+    margin-bottom: 5px;
+    color: #6c757d;
+}
+
+.credit-card .card-number {
+    font-family: 'Courier New', monospace;
+    letter-spacing: 1px;
+}
+
+.timeline {
+    position: relative;
+    padding: 20px 0;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 2px;
+    height: 100%;
+    background-color: #e9ecef;
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 30px;
+    margin-bottom: 20px;
+}
+
+.timeline-item:last-child {
+    margin-bottom: 0;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -5px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: #fff;
+    border: 2px solid #3498db;
+}
+
+.timeline-item .timeline-date {
+    font-size: 12px;
+    color: #6c757d;
+    margin-bottom: 5px;
+}
+
+.timeline-item .timeline-content {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.timeline-item .timeline-content h6 {
+    margin-bottom: 5px;
+    color: #2c3e50;
+}
+
+.timeline-item .timeline-content p {
+    margin-bottom: 0;
+    color: #6c757d;
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Kullanıcı Başlığı -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="user-avatar me-4">
+                            <div class="avatar-circle">
+                                <span class="avatar-text">{{ user.username[:2].upper() }}</span>
+                            </div>
+                        </div>
+                        <div class="user-info">
+                            <h2 class="mb-1">{{ user.username }}</h2>
+                            <p class="text-muted mb-0">{{ user.email }}</p>
+                            <div class="mt-2">
+                                <span class="badge {% if user.is_active %}bg-success{% else %}bg-danger{% endif %} me-2">
+                                    {% if user.is_active %}Aktif{% else %}Pasif{% endif %}
+                                </span>
+                                <span class="badge bg-info">Kayıt: {{ user.created_at.strftime('%d.%m.%Y') }}</span>
+                            </div>
+                        </div>
+                        <div class="ms-auto">
+                            <button type="button" class="btn btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#editUserModal">
+                                <i class="fas fa-edit me-2"></i>Düzenle
+                            </button>
+                            {% if not user.orders %}
+                                <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteUserModal">
+                                    <i class="fas fa-trash me-2"></i>Sil
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- İstatistikler -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon bg-primary text-white me-3">
+                            <i class="fas fa-shopping-bag"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Toplam Sipariş</h6>
+                            <h3 class="mb-0">{{ user.orders|length }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon bg-success text-white me-3">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Kayıtlı Adres</h6>
+                            <h3 class="mb-0">{{ user.addresses|length }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon bg-info text-white me-3">
+                            <i class="fas fa-credit-card"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Kayıtlı Kart</h6>
+                            <h3 class="mb-0">{{ user.credit_cards|length }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Adresler -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Kayıtlı Adresler</h5>
+                </div>
+                <div class="card-body">
+                    {% if user.addresses %}
+                        <div class="address-list">
+                            {% for address in user.addresses %}
+                                <div class="address-card mb-3">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">{{ address.name }}</h6>
+                                            <p class="mb-1">{{ address.full_address }}</p>
+                                            <p class="mb-1">{{ address.city }} {{ address.postal_code }}</p>
+                                            <p class="mb-0 text-muted">{{ address.phone }}</p>
+                                        </div>
+                                        {% if address.is_default %}
+                                            <span class="badge bg-primary">Varsayılan</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-map-marker-alt fa-3x text-muted mb-3"></i>
+                            <p class="text-muted mb-0">Henüz kayıtlı adres bulunmuyor</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Kredi Kartları -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Kayıtlı Kartlar</h5>
+                </div>
+                <div class="card-body">
+                    {% if user.credit_cards %}
+                        <div class="credit-card-list">
+                            {% for card in user.credit_cards %}
+                                <div class="credit-card mb-3">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">{{ card.name }}</h6>
+                                            <p class="mb-1 card-number">{{ card.card_number }}</p>
+                                            <div class="card-details">
+                                                <p class="mb-1">Kart Sahibi: {{ card.card_holder }}</p>
+                                                <p class="mb-1">Son Kullanma: {{ '%02d'|format(card.expiry_month) }}/{{ (card.expiry_year|string)[-2:] }}</p>
+                                                <p class="mb-0">CVV: {{ card.cvv }}</p>
+                                            </div>
+                                        </div>
+                                        {% if card.is_default %}
+                                            <span class="badge bg-primary">Varsayılan</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-credit-card fa-3x text-muted mb-3"></i>
+                            <p class="text-muted mb-0">Henüz kayıtlı kart bulunmuyor</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sipariş Geçmişi -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Sipariş Geçmişi</h5>
+                </div>
+                <div class="card-body">
+                    {% if user.orders %}
+                        <div class="timeline">
+                            {% for order in user.orders|sort(attribute='created_at', reverse=true) %}
+                                <div class="timeline-item">
+                                    <div class="timeline-marker"></div>
+                                    <div class="timeline-content">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <h6 class="mb-0">Sipariş #{{ order.id }}</h6>
+                                            <span class="badge {% if order.status == 'pending' %}bg-warning{% elif order.status == 'processing' %}bg-info{% elif order.status == 'shipped' %}bg-primary{% elif order.status == 'delivered' %}bg-success{% else %}bg-secondary{% endif %}">
+                                                {% if order.status == 'pending' %}Beklemede
+                                                {% elif order.status == 'processing' %}Hazırlanıyor
+                                                {% elif order.status == 'shipped' %}Kargoya Verildi
+                                                {% elif order.status == 'delivered' %}Teslim Edildi
+                                                {% else %}{{ order.status }}{% endif %}
+                                            </span>
+                                        </div>
+                                        <p class="text-muted mb-2">{{ order.created_at.strftime('%d.%m.%Y %H:%M') }}</p>
+                                        <div class="order-details">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <small class="text-muted d-block">Teslimat Adresi:</small>
+                                                    <p class="mb-2">
+                                                        {{ order.address.name }}<br>
+                                                        {{ order.address.full_address }}<br>
+                                                        {{ order.address.city }} {{ order.address.postal_code }}
+                                                    </p>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <small class="text-muted d-block">Ödeme Yöntemi:</small>
+                                                    <p class="mb-2">
+                                                        {{ order.credit_card.name }}<br>
+                                                        {{ order.credit_card.card_number }}<br>
+                                                        {{ order.credit_card.card_holder }}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div class="mt-3">
+                                                <small class="text-muted d-block">Ürünler:</small>
+                                                <ul class="list-unstyled mb-0">
+                                                    {% for item in order.items %}
+                                                        <li class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                                            <div>
+                                                                <h6 class="mb-0">{{ item.product.name }}</h6>
+                                                                <small class="text-muted">{{ item.quantity }} adet x {{ "%.2f"|format(item.price) }} TL</small>
+                                                            </div>
+                                                            <span class="text-primary">{{ "%.2f"|format(item.quantity * item.price) }} TL</span>
+                                                        </li>
+                                                    {% endfor %}
+                                                </ul>
+                                                <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                                                    <small class="text-muted">Toplam Tutar:</small>
+                                                    <h5 class="mb-0 text-primary">{{ "%.2f"|format(order.total_amount) }} TL</h5>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-shopping-bag fa-3x text-muted mb-3"></i>
+                            <p class="text-muted mb-0">Henüz sipariş bulunmuyor</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Kullanıcı Düzenleme Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('admin.edit_user', user_id=user.id) }}" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Kullanıcı Düzenle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Kullanıcı Adı</label>
+                        <input type="text" class="form-control" name="username" value="{{ user.username }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">E-posta</label>
+                        <input type="email" class="form-control" name="email" value="{{ user.email }}" required>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" name="is_active" id="isActive" {% if user.is_active %}checked{% endif %}>
+                        <label class="form-check-label" for="isActive">Aktif</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Kullanıcı Silme Modal -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('admin.delete_user', user_id=user.id) }}" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Kullanıcı Sil</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Bu kullanıcıyı silmek istediğinizden emin misiniz?</p>
+                    <p class="text-danger mb-0">Bu işlem geri alınamaz!</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-danger">Sil</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.user-avatar {
+    width: 80px;
+    height: 80px;
+}
+
+.avatar-circle {
+    width: 100%;
+    height: 100%;
+    background-color: #e9ecef;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.avatar-text {
+    font-size: 2rem;
+    font-weight: 600;
+    color: #6c757d;
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.address-card, .credit-card {
+    padding: 1rem;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+}
+
+.address-card:hover, .credit-card:hover {
+    border-color: #0d6efd;
+    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+}
+
+.timeline {
+    position: relative;
+    padding-left: 3rem;
+}
+
+.timeline-item {
+    position: relative;
+    padding-bottom: 2rem;
+}
+
+.timeline-item:last-child {
+    padding-bottom: 0;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -3rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    background-color: #0d6efd;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 2px #0d6efd;
+}
+
+.timeline-item:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: -2.25rem;
+    top: 1.5rem;
+    bottom: 0;
+    width: 2px;
+    background-color: #dee2e6;
+}
+
+.timeline-content {
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+    padding: 1rem;
+}
+
+.badge {
+    font-size: 0.75rem;
+    padding: 0.5em 1em;
+}
+
+.list-unstyled li:last-child {
+    border-bottom: none !important;
+}
+</style>
+{% endblock %} 

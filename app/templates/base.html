@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}TechStore{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="custom-scrollbar">
+    <!-- Animasyonlu Arka Plan -->
+    <div class="animated-bg"></div>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top" id="mainNav">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('main.index') }}">
+                <span class="brand-text">TechStore</span>
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarMain">
+                <ul class="navbar-nav mx-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'main.index' }}" 
+                           href="{{ url_for('main.index') }}">
+                            <i class="fas fa-home"></i>
+                            <span>Ana Sayfa</span>
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {{ 'active' if request.endpoint == 'main.products' }}" 
+                           href="#" 
+                           role="button" 
+                           data-bs-toggle="dropdown"
+                           aria-expanded="false">
+                            <i class="fas fa-mobile-alt"></i>
+                            <span>Ürünler</span>
+                        </a>
+                        <ul class="dropdown-menu glass-dropdown">
+                            {% for category in categories %}
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('main.products', category=category.id) }}">
+                                    {{ category.name }}
+                                </a>
+                            </li>
+                            {% endfor %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('main.products') }}">
+                                    <i class="fas fa-th-large"></i>
+                                    <span>Tüm Ürünler</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'main.news' }}" 
+                           href="{{ url_for('main.news') }}">
+                            <i class="fas fa-newspaper"></i>
+                            <span>Haberler</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'main.about' }}" 
+                           href="{{ url_for('main.about') }}">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Hakkımızda</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'main.contact' }}" 
+                           href="{{ url_for('main.contact') }}">
+                            <i class="fas fa-envelope"></i>
+                            <span>İletişim</span>
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="navbar-nav ms-auto">
+                    <div class="nav-item d-flex align-items-center">
+                        <a href="{{ url_for('main.view_cart') }}" class="nav-link cart-link">
+                            <i class="fas fa-shopping-cart cart-icon"></i>
+                            <span class="cart-count">{{ cart_count|default(0) }}</span>
+                        </a>
+                        {% if current_user.is_authenticated %}
+                            <div class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" 
+                                   href="#" 
+                                   id="userDropdown" 
+                                   role="button" 
+                                   data-bs-toggle="dropdown"
+                                   aria-expanded="false">
+                                    <i class="fas fa-user me-2"></i>{{ current_user.username }}
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    {% if current_user.is_admin %}
+                                        <li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}">
+                                            <i class="fas fa-tachometer-alt me-2"></i>Admin Panel
+                                        </a></li>
+                                    {% endif %}
+                                    <li><a class="dropdown-item" href="{{ url_for('main.profile') }}">
+                                        <i class="fas fa-user-circle me-2"></i>Profilim
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+                                        <i class="fas fa-sign-out-alt me-2"></i>Çıkış Yap
+                                    </a></li>
+                                </ul>
+                            </div>
+                        {% else %}
+                            <a href="{{ url_for('auth.login') }}" class="btn btn-primary me-2">
+                                <i class="fas fa-sign-in-alt me-2"></i>Giriş Yap
+                            </a>
+                            <a href="{{ url_for('auth.register') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-user-plus me-2"></i>Kayıt Ol
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Ana İçerik -->
+    <main class="container py-5 mt-5">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show animate-fade-in" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Hero Image -->
+        <div class="hero-image" style="background-image: url('{{ url_for('static', filename='images/no-image.jpg') }}');">
+            <!-- ... existing code ... -->
+        </div>
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-waves">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320">
+                <path fill="#ffffff" fill-opacity="1" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,149.3C960,160,1056,160,1152,138.7C1248,117,1344,75,1392,53.3L1440,32L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+            </svg>
+        </div>
+        
+        <div class="footer-content">
+            <div class="container">
+                <div class="row g-4">
+                    <!-- Logo ve Açıklama -->
+                    <div class="col-lg-4">
+                        <div class="footer-brand">
+                            <h3 class="text-gradient mb-3">TechStore</h3>
+                            <p class="text-muted">En yeni teknoloji ürünleri, en uygun fiyatlarla. Güvenli alışverişin adresi.</p>
+                        </div>
+                        <div class="social-links mt-4">
+                            <a href="#" class="social-link" data-tooltip="Facebook">
+                                <i class="fab fa-facebook-f"></i>
+                            </a>
+                            <a href="#" class="social-link" data-tooltip="Twitter">
+                                <i class="fab fa-twitter"></i>
+                            </a>
+                            <a href="#" class="social-link" data-tooltip="Instagram">
+                                <i class="fab fa-instagram"></i>
+                            </a>
+                            <a href="#" class="social-link" data-tooltip="LinkedIn">
+                                <i class="fab fa-linkedin-in"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Hızlı Linkler -->
+                    <div class="col-lg-2 col-md-4">
+                        <h5 class="footer-heading">Hızlı Linkler</h5>
+                        <ul class="footer-links">
+                            <li><a href="{{ url_for('main.index') }}">Ana Sayfa</a></li>
+                            <li><a href="{{ url_for('main.products') }}">Ürünler</a></li>
+                            <li><a href="{{ url_for('main.news') }}">Haberler</a></li>
+                            <li><a href="{{ url_for('main.about') }}">Hakkımızda</a></li>
+                            <li><a href="{{ url_for('main.contact') }}">İletişim</a></li>
+                        </ul>
+                    </div>
+
+                    <!-- Kategoriler -->
+                    <div class="col-lg-2 col-md-4">
+                        <h5 class="footer-heading">Kategoriler</h5>
+                        <ul class="footer-links">
+                            {% for category in categories %}
+                            <li>
+                                <a href="{{ url_for('main.products', category=category.id) }}">
+                                    <i class="{{ category.icon }} me-2"></i>{{ category.name }}
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+
+                    <!-- İletişim ve Bülten -->
+                    <div class="col-lg-4 col-md-4">
+                        <h5 class="footer-heading">İletişim</h5>
+                        <ul class="footer-contact">
+                            <li>
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span>Teknoloji Caddesi No:123, İstanbul</span>
+                            </li>
+                            <li>
+                                <i class="fas fa-phone"></i>
+                                <span>+90 (212) 123 45 67</span>
+                            </li>
+                            <li>
+                                <i class="fas fa-envelope"></i>
+                                <span>info@techstore.com</span>
+                            </li>
+                        </ul>
+                        <div class="newsletter mt-4">
+                            <h5 class="footer-heading">Bültenimize Katılın</h5>
+                            <p class="text-muted small">Yeni ürünler ve kampanyalardan haberdar olun!</p>
+                            <form class="newsletter-form">
+                                <div class="input-group">
+                                    <input type="email" class="form-control" placeholder="E-posta adresiniz">
+                                    <button class="btn btn-primary" type="submit">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alt Footer -->
+                <div class="footer-bottom">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <p class="mb-md-0">
+                                &copy; 2024 TechStore. Tüm hakları saklıdır.
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="payment-methods">
+                                <i class="fab fa-cc-visa" data-tooltip="Visa"></i>
+                                <i class="fab fa-cc-mastercard" data-tooltip="Mastercard"></i>
+                                <i class="fab fa-cc-paypal" data-tooltip="PayPal"></i>
+                                <i class="fab fa-cc-apple-pay" data-tooltip="Apple Pay"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <style>
+    /* Footer Styles */
+    .footer {
+        position: relative;
+        background: linear-gradient(135deg, #2c3e50, #3498db);
+        color: white;
+        margin-top: 4rem;
+        padding-top: 4rem;
+    }
+
+    .footer-waves {
+        position: absolute;
+        top: -100px;
+        left: 0;
+        width: 100%;
+        overflow: hidden;
+        line-height: 0;
+        transform: rotate(180deg);
+    }
+
+    .footer-waves svg {
+        position: relative;
+        display: block;
+        width: calc(100% + 1.3px);
+        height: 100px;
+    }
+
+    .footer-content {
+        position: relative;
+        z-index: 1;
+    }
+
+    .footer-brand h3 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        background: linear-gradient(45deg, #fff, #e0e0e0);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .footer-brand p {
+        color: rgba(255, 255, 255, 0.8);
+        line-height: 1.6;
+    }
+
+    .footer-heading {
+        color: white;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        position: relative;
+        padding-bottom: 0.5rem;
+    }
+
+    .footer-heading::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 50px;
+        height: 2px;
+        background: rgba(255, 255, 255, 0.3);
+    }
+
+    .footer-links {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .footer-links li {
+        margin-bottom: 0.75rem;
+    }
+
+    .footer-links a {
+        color: rgba(255, 255, 255, 0.8);
+        text-decoration: none;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+    }
+
+    .footer-links a:hover {
+        color: white;
+        transform: translateX(5px);
+    }
+
+    .footer-contact {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .footer-contact li {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    .footer-contact i {
+        width: 24px;
+        margin-right: 1rem;
+        color: rgba(255, 255, 255, 0.6);
+    }
+
+    .social-links {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .social-link {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .social-link:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: translateY(-3px);
+        color: white;
+    }
+
+    .social-link[data-tooltip]::before {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 0.5rem;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        font-size: 0.75rem;
+        border-radius: 0.25rem;
+        white-space: nowrap;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .social-link[data-tooltip]:hover::before {
+        opacity: 1;
+        visibility: visible;
+        transform: translateX(-50%) translateY(-5px);
+    }
+
+    .newsletter-form .input-group {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+
+    .newsletter-form .form-control {
+        background: transparent;
+        border: none;
+        color: white;
+        padding: 0.75rem 1rem;
+    }
+
+    .newsletter-form .form-control::placeholder {
+        color: rgba(255, 255, 255, 0.6);
+    }
+
+    .newsletter-form .btn {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: white;
+        padding: 0.75rem 1.25rem;
+    }
+
+    .newsletter-form .btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+
+    .footer-bottom {
+        margin-top: 3rem;
+        padding-top: 2rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .footer-bottom p {
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 0.9rem;
+    }
+
+    .payment-methods {
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+    }
+
+    .payment-methods i {
+        font-size: 2rem;
+        color: rgba(255, 255, 255, 0.6);
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .payment-methods i:hover {
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    .payment-methods i[data-tooltip]::before {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 0.5rem;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        font-size: 0.75rem;
+        border-radius: 0.25rem;
+        white-space: nowrap;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .payment-methods i[data-tooltip]:hover::before {
+        opacity: 1;
+        visibility: visible;
+        transform: translateX(-50%) translateY(-5px);
+    }
+
+    @media (max-width: 768px) {
+        .footer {
+            text-align: center;
+        }
+
+        .footer-heading::after {
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .social-links {
+            justify-content: center;
+        }
+
+        .footer-contact li {
+            justify-content: center;
+        }
+
+        .payment-methods {
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        .footer-bottom p {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+    }
+
+    /* Genel Kart Stilleri */
+    .card {
+        border: none;
+        box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+        border-radius: 0.5rem;
+        transition: none; /* Hover efektini kaldırdık */
+    }
+
+    .card:hover {
+        box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075); /* Sabit gölge */
+        transform: none; /* Transform efektini kaldırdık */
+    }
+
+    /* Ürün Kartı Stilleri */
+    .product-card {
+        border: none;
+        box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+        border-radius: 0.5rem;
+        transition: none; /* Hover efektini kaldırdık */
+        text-decoration: none;
+        color: inherit;
+        display: block;
+    }
+
+    .product-card:hover {
+        box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075); /* Sabit gölge */
+        transform: none; /* Transform efektini kaldırdık */
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .product-card .product-image {
+        position: relative;
+        padding-top: 100%;
+        overflow: hidden;
+        border-radius: 0.5rem 0.5rem 0 0;
+    }
+
+    .product-card .product-image img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .product-card .product-info {
+        padding: 1rem;
+    }
+
+    .product-card .product-title {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: inherit;
+    }
+
+    .product-card .product-title:hover {
+        color: var(--primary-color);
+    }
+
+    .product-card .product-price {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .product-card .current-price {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--primary-color);
+    }
+
+    .product-card .original-price {
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.5);
+        text-decoration: line-through;
+    }
+
+    /* Glass Card Stilleri */
+    .glass-card {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 0.5rem;
+        box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+        transition: none; /* Hover efektini kaldırdık */
+    }
+
+    .glass-card:hover {
+        box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075); /* Sabit gölge */
+        transform: none; /* Transform efektini kaldırdık */
+    }
+
+    /* Sepet sayacı için stil */
+    .cart-count {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background-color: #dc3545;
+        color: white;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+    }
+
+    /* Cart link için stil */
+    .cart-link {
+        position: relative;
+        display: inline-block;
+    }
+
+    .cart-icon {
+        font-size: 1.25rem;
+        color: #495057;
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+
+    .cart-icon:hover {
+        color: var(--primary-color);
+    }
+
+    /* Toast bildirimleri için stil */
+    .toast-container {
+        position: fixed;
+        bottom: 1rem;
+        right: 1rem;
+        z-index: 9999;
+    }
+
+    .toast {
+        background: white;
+        border: none;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        min-width: 250px;
+    }
+
+    .toast.bg-success {
+        background-color: #28a745 !important;
+        color: white !important;
+    }
+
+    .toast.bg-error {
+        background-color: #dc3545 !important;
+        color: white !important;
+    }
+
+    .toast.bg-warning {
+        background-color: #ffc107 !important;
+        color: #212529 !important;
+    }
+
+    .toast.bg-info {
+        background-color: #17a2b8 !important;
+        color: white !important;
+    }
+    </style>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script>
+        // Navbar Scroll Efekti
+        window.addEventListener('scroll', function() {
+            const navbar = document.getElementById('mainNav');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // Animasyonlu Elementler
+        document.addEventListener('DOMContentLoaded', function() {
+            const animatedElements = document.querySelectorAll('.animate-fade-in');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            });
+
+            animatedElements.forEach(element => {
+                element.style.opacity = '0';
+                element.style.transform = 'translateY(20px)';
+                observer.observe(element);
+            });
+
+            // Bootstrap dropdown'ları için özel ayarlar
+            const dropdownElementList = document.querySelectorAll('.dropdown-toggle');
+            const dropdownList = [...dropdownElementList].map(dropdownToggleEl => {
+                return new bootstrap.Dropdown(dropdownToggleEl, {
+                    autoClose: true
+                });
+            });
+            
+            // Dropdown menülerin dışına tıklandığında kapanması için
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.dropdown')) {
+                    dropdownList.forEach(dropdown => {
+                        dropdown.hide();
+                    });
+                }
+            });
+        });
+
+        // Sepet sayacını güncellemek için global fonksiyon
+        function updateCartCount(count) {
+            const cartCount = document.querySelector('.cart-count');
+            if (cartCount) {
+                cartCount.textContent = count;
+                cartCount.classList.add('animate__animated', 'animate__bounceIn');
+                setTimeout(() => {
+                    cartCount.classList.remove('animate__animated', 'animate__bounceIn');
+                }, 1000);
+            }
+        }
+
+        // Toast bildirimi göstermek için global fonksiyon
+        function showToast(type, message) {
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-white bg-${type} border-0`;
+            toast.setAttribute('role', 'alert');
+            toast.setAttribute('aria-live', 'assertive');
+            toast.setAttribute('aria-atomic', 'true');
+            
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            
+            const container = document.createElement('div');
+            container.className = 'toast-container';
+            container.appendChild(toast);
+            document.body.appendChild(container);
+            
+            const bsToast = new bootstrap.Toast(toast, {
+                animation: true,
+                autohide: true,
+                delay: 3000
+            });
+            bsToast.show();
+            
+            toast.addEventListener('hidden.bs.toast', () => {
+                container.remove();
+            });
+        }
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html> 

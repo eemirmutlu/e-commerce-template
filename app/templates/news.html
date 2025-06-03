@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Haberler - TechStore{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-5">
+    <!-- Hero Section -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="glass-card p-5 text-center">
+                <h1 class="display-4 text-gradient mb-4">Teknoloji Haberleri</h1>
+                <p class="lead text-muted">En son teknoloji haberleri ve güncellemeleri burada!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Haberler Grid -->
+    <div class="row g-4">
+        {% for news_item in news %}
+        <div class="col-md-6 col-lg-4">
+            <div class="glass-card h-100">
+                <div class="position-relative">
+                    {% if news_item.image_path %}
+                    <img src="{{ url_for('static', filename=news_item.image_path) }}" 
+                         class="card-img-top rounded-top" 
+                         alt="{{ news_item.title }}"
+                         style="height: 200px; object-fit: cover;">
+                    {% endif %}
+                    <div class="position-absolute top-0 end-0 m-3">
+                        <span class="badge bg-primary">
+                            {{ news_item.created_at.strftime('%d %B %Y') }}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <h3 class="h4 mb-3">{{ news_item.title }}</h3>
+                    <p class="text-muted mb-4">
+                        {{ news_item.content[:200] }}...
+                    </p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{{ url_for('main.news_detail', news_id=news_item.id) }}" 
+                           class="btn btn-glow">
+                            Devamını Oku
+                            <i class="fas fa-arrow-right ms-2"></i>
+                        </a>
+                        {% if news_item.is_published %}
+                        <span class="badge bg-success">Yayında</span>
+                        {% else %}
+                        <span class="badge bg-warning">Taslak</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="glass-card p-5 text-center">
+                <i class="fas fa-newspaper fa-3x text-muted mb-3"></i>
+                <h3>Henüz Haber Yok</h3>
+                <p class="text-muted">Yakında yeni haberler eklenecek.</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.glass-card {
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.glass-card:hover {
+    transform: translateY(-5px);
+}
+
+.glass-card img {
+    transition: all 0.3s ease;
+}
+
+.glass-card:hover img {
+    transform: scale(1.05);
+}
+
+.badge {
+    font-weight: 500;
+    padding: 0.5em 1em;
+}
+
+.btn-glow {
+    transition: all 0.3s ease;
+}
+
+.btn-glow:hover {
+    transform: translateX(5px);
+}
+</style>
+{% endblock %} 

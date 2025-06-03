@@ -1,0 +1,338 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Sipariş Detayı #{{ order.id }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Başlık ve Durum -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <div class="d-flex align-items-center mb-2">
+                <a href="{{ url_for('admin.orders') }}" class="btn btn-link text-muted p-0 me-3">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <h2 class="mb-0">Sipariş #{{ order.id }}</h2>
+            </div>
+            <p class="text-muted mb-0">{{ order.created_at.strftime('%d.%m.%Y %H:%M') }}</p>
+        </div>
+        <div class="d-flex gap-3">
+            <div class="order-status">
+                <span class="status-badge status-{{ order.status }}">
+                    {% if order.status == 'pending' %}
+                        <i class="fas fa-clock me-1"></i>Beklemede
+                    {% elif order.status == 'processing' %}
+                        <i class="fas fa-cog me-1"></i>İşleniyor
+                    {% elif order.status == 'shipped' %}
+                        <i class="fas fa-truck me-1"></i>Kargoda
+                    {% elif order.status == 'delivered' %}
+                        <i class="fas fa-check-circle me-1"></i>Teslim Edildi
+                    {% elif order.status == 'cancelled' %}
+                        <i class="fas fa-times-circle me-1"></i>İptal Edildi
+                    {% endif %}
+                </span>
+            </div>
+            <select class="form-select status-select" data-order-id="{{ order.id }}">
+                <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>Beklemede</option>
+                <option value="processing" {% if order.status == 'processing' %}selected{% endif %}>İşleniyor</option>
+                <option value="shipped" {% if order.status == 'shipped' %}selected{% endif %}>Kargoda</option>
+                <option value="delivered" {% if order.status == 'delivered' %}selected{% endif %}>Teslim Edildi</option>
+                <option value="cancelled" {% if order.status == 'cancelled' %}selected{% endif %}>İptal Edildi</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Müşteri Bilgileri -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="card-title mb-0">Müşteri Bilgileri</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="user-avatar me-3">
+                            <div class="avatar-circle">
+                                <span class="avatar-text">{{ order.user.username[:2].upper() }}</span>
+                            </div>
+                        </div>
+                        <div>
+                            <h6 class="mb-1">{{ order.user.username }}</h6>
+                            <p class="text-muted mb-0">{{ order.user.email }}</p>
+                        </div>
+                    </div>
+                    <div class="info-list">
+                        <div class="info-item">
+                            <div class="info-label">Telefon</div>
+                            <div class="info-value">{{ order.phone or 'Belirtilmemiş' }}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Adres</div>
+                            <div class="info-value">{{ order.address or 'Belirtilmemiş' }}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Kayıt Tarihi</div>
+                            <div class="info-value">{{ order.user.created_at.strftime('%d.%m.%Y') }}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Toplam Sipariş</div>
+                            <div class="info-value">{{ order.user.orders|length }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sipariş Özeti -->
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="card-title mb-0">Sipariş Özeti</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="border-0">Ürün</th>
+                                    <th class="border-0 text-end">Fiyat</th>
+                                    <th class="border-0 text-center">Adet</th>
+                                    <th class="border-0 text-end">Toplam</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in order.items %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if item.product.image_url %}
+                                            <img src="{{ item.product.image_url }}" alt="{{ item.product.name }}" 
+                                                 class="me-3" style="width: 48px; height: 48px; object-fit: cover; border-radius: 8px;">
+                                            {% endif %}
+                                            <div>
+                                                <div class="fw-medium">{{ item.product.name }}</div>
+                                                <small class="text-muted">{{ item.product.category.name }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-end">{{ "%.2f"|format(item.price) }} ₺</td>
+                                    <td class="text-center">{{ item.quantity }}</td>
+                                    <td class="text-end fw-medium">{{ "%.2f"|format(item.price * item.quantity) }} ₺</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="bg-light">
+                                <tr>
+                                    <td colspan="3" class="text-end">Ara Toplam</td>
+                                    <td class="text-end">{{ "%.2f"|format(order.total_amount) }} ₺</td>
+                                </tr>
+                                {% if order.shipping_cost %}
+                                <tr>
+                                    <td colspan="3" class="text-end">Kargo</td>
+                                    <td class="text-end">{{ "%.2f"|format(order.shipping_cost) }} ₺</td>
+                                </tr>
+                                {% endif %}
+                                <tr>
+                                    <td colspan="3" class="text-end fw-bold">Genel Toplam</td>
+                                    <td class="text-end fw-bold">{{ "%.2f"|format(order.total_amount + (order.shipping_cost or 0)) }} ₺</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sipariş Geçmişi -->
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="card-title mb-0">Sipariş Geçmişi</h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        {% for status in order.status_history %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <div class="d-flex align-items-center mb-1">
+                                    <h6 class="mb-0 me-2">{{ status.status_display }}</h6>
+                                    <small class="text-muted">{{ status.created_at.strftime('%d.%m.%Y %H:%M') }}</small>
+                                </div>
+                                {% if status.note %}
+                                <p class="mb-0 text-muted">{{ status.note }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+.status-pending {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.status-processing {
+    background-color: #cce5ff;
+    color: #004085;
+}
+
+.status-shipped {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-delivered {
+    background-color: #d1e7dd;
+    color: #0f5132;
+}
+
+.status-cancelled {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.avatar-circle {
+    width: 48px;
+    height: 48px;
+    background: #e9ecef;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.avatar-text {
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: #6c757d;
+}
+
+.info-list {
+    display: grid;
+    gap: 1rem;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+}
+
+.info-label {
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+.info-value {
+    font-weight: 500;
+}
+
+.timeline {
+    position: relative;
+    padding: 1rem 0;
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 2rem;
+    padding-bottom: 1.5rem;
+}
+
+.timeline-item:last-child {
+    padding-bottom: 0;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    background: #0d6efd;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px #0d6efd;
+}
+
+.timeline-item:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 0.5rem;
+    top: 1rem;
+    bottom: 0;
+    width: 2px;
+    background: #e9ecef;
+}
+
+.table > :not(caption) > * > * {
+    padding: 1rem;
+}
+
+.form-select {
+    min-width: 150px;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Status değişikliği
+    const statusSelect = document.querySelector('.status-select');
+    statusSelect.addEventListener('change', function() {
+        const orderId = this.dataset.orderId;
+        const newStatus = this.value;
+        
+        fetch('{{ url_for("admin.update_order_status") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                order_id: orderId,
+                status: newStatus
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Başarılı güncelleme
+                const toast = new bootstrap.Toast(document.createElement('div'));
+                toast.show();
+                // Sayfayı yenile
+                location.reload();
+            } else {
+                // Hata durumunda eski değere geri dön
+                this.value = this.dataset.originalValue;
+                alert('Sipariş durumu güncellenirken bir hata oluştu.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            this.value = this.dataset.originalValue;
+            alert('Bir hata oluştu.');
+        });
+    });
+});
+</script>
+{% endblock %} 

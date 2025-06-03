@@ -1,0 +1,650 @@
+{% extends "base.html" %}
+
+{% block title %}Ürünler{% endblock %}
+
+{% block content %}
+<!-- Hero Section with Search -->
+<div class="products-hero bg-light py-5 mb-4">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 text-center">
+                <h1 class="display-5 mb-4">Ürünlerimiz</h1>
+                <form action="{{ url_for('main.products') }}" method="get" class="search-form">
+                    <div class="input-group input-group-lg">
+                        <input type="text" name="search" class="form-control" placeholder="Ürün ara..." value="{{ request.args.get('search', '') }}">
+                        <button class="btn btn-primary" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Modern Filters Bar -->
+    <div class="filters-bar-modern mb-4">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-3">
+                <div class="dropdown">
+                    <button class="btn btn-light dropdown-toggle w-100 d-flex justify-content-between align-items-center" type="button" data-bs-toggle="dropdown">
+                        <span><i class="fas fa-tags me-2"></i>Kategoriler</span>
+                        {% if request.args.get('category') %}
+                        <span class="badge bg-primary rounded-pill">{{ request.args.get('category') }}</span>
+                        {% endif %}
+                    </button>
+                    <div class="dropdown-menu w-100 p-3">
+                        <form id="categoryForm" action="{{ url_for('main.products') }}" method="get">
+                            {% for category in categories %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="category" value="{{ category.slug }}" 
+                                       id="category{{ category.id }}" {% if category.slug in request.args.getlist('category') %}checked{% endif %}>
+                                <label class="form-check-label" for="category{{ category.id }}">
+                                    {{ category.name }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                            <div class="mt-3">
+                                <button type="submit" class="btn btn-primary btn-sm w-100">Filtrele</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="dropdown">
+                    <button class="btn btn-light dropdown-toggle w-100 d-flex justify-content-between align-items-center" type="button" data-bs-toggle="dropdown">
+                        <span><i class="fas fa-dollar-sign me-2"></i>Fiyat Aralığı</span>
+                        {% if request.args.get('min_price') or request.args.get('max_price') %}
+                        <span class="badge bg-primary rounded-pill">Filtreli</span>
+                        {% endif %}
+                    </button>
+                    <div class="dropdown-menu w-100 p-3">
+                        <form id="priceForm" action="{{ url_for('main.products') }}" method="get">
+                            <div class="mb-3">
+                                <label class="form-label">Min: {{ request.args.get('min_price', '0') }}₺</label>
+                                <input type="range" class="form-range" name="min_price" min="0" max="10000" 
+                                       value="{{ request.args.get('min_price', '0') }}" step="100">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Max: {{ request.args.get('max_price', '10000') }}₺</label>
+                                <input type="range" class="form-range" name="max_price" min="0" max="10000" 
+                                       value="{{ request.args.get('max_price', '10000') }}" step="100">
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="dropdown">
+                    <button class="btn btn-light dropdown-toggle w-100 d-flex justify-content-between align-items-center" type="button" data-bs-toggle="dropdown">
+                        <span><i class="fas fa-sort me-2"></i>Sıralama</span>
+                        {% if request.args.get('sort') %}
+                        <span class="badge bg-primary rounded-pill">{{ request.args.get('sort') }}</span>
+                        {% endif %}
+                    </button>
+                    <div class="dropdown-menu w-100">
+                        <a class="dropdown-item" href="{{ url_for('main.products', sort='price_asc') }}">Fiyat (Düşükten Yükseğe)</a>
+                        <a class="dropdown-item" href="{{ url_for('main.products', sort='price_desc') }}">Fiyat (Yüksekten Düşüğe)</a>
+                        <a class="dropdown-item" href="{{ url_for('main.products', sort='name_asc') }}">İsim (A-Z)</a>
+                        <a class="dropdown-item" href="{{ url_for('main.products', sort='name_desc') }}">İsim (Z-A)</a>
+                        <a class="dropdown-item" href="{{ url_for('main.products', sort='newest') }}">En Yeniler</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="dropdown">
+                    <button class="btn btn-light dropdown-toggle w-100 d-flex justify-content-between align-items-center" type="button" data-bs-toggle="dropdown">
+                        <span><i class="fas fa-box me-2"></i>Stok Durumu</span>
+                        {% if request.args.get('in_stock') %}
+                        <span class="badge bg-primary rounded-pill">Stokta</span>
+                        {% endif %}
+                    </button>
+                    <div class="dropdown-menu w-100">
+                        <a class="dropdown-item" href="{{ url_for('main.products', in_stock='true') }}">Sadece Stokta Olanlar</a>
+                        <a class="dropdown-item" href="{{ url_for('main.products') }}">Tümü</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Products Grid -->
+    <div class="row g-4">
+        {% if products %}
+            {% for product in products %}
+            <div class="col-md-3 mb-4">
+                <div class="product-card-modern">
+                    <div class="product-badges">
+                        {% if product.discount_percent %}
+                        <span class="badge bg-danger">%{{ product.discount_percent }}</span>
+                        {% endif %}
+                        {% if product.is_new %}
+                        <span class="badge bg-success">Yeni</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="product-image">
+                        <a href="{{ url_for('main.product_detail', product_id=product.id) }}">
+                            {% if product.image_url %}
+                            <img src="{{ url_for('static', filename='uploads/' + product.image_url) }}" 
+                                 alt="{{ product.name }}"
+                                 class="img-fluid">
+                            {% else %}
+                            <div class="no-image">
+                                <i class="fas fa-image"></i>
+                            </div>
+                            {% endif %}
+                        </a>
+                        <div class="product-actions">
+                            <button class="btn-action" onclick="addToCart({{ product.id }})" title="Sepete Ekle">
+                                <i class="fas fa-cart-plus"></i>
+                            </button>
+                            <button class="btn-action {% if current_user.is_authenticated and current_user.has_liked_product(product) %}liked{% endif %}"
+                                    onclick="toggleLike({{ product.id }})" 
+                                    {% if not current_user.is_authenticated %}disabled{% endif %}
+                                    title="Favorilere Ekle">
+                                <i class="fas fa-heart"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="product-info">
+                        <div class="product-category">{{ product.category.name }}</div>
+                        <h3 class="product-title">
+                            <a href="{{ url_for('main.product_detail', product_id=product.id) }}">{{ product.name }}</a>
+                        </h3>
+                        <div class="product-rating">
+                            {% for i in range(5) %}
+                            <i class="fas fa-star {{ 'text-warning' if i < product.rating else 'text-muted' }}"></i>
+                            {% endfor %}
+                            <span class="rating-count">({{ product.reviews|length }})</span>
+                        </div>
+                        <div class="product-price">
+                            {% if product.discount_price %}
+                            <span class="original-price">{{ product.price|currency }}</span>
+                            <span class="current-price">{{ product.discount_price|currency }}</span>
+                            {% else %}
+                            <span class="current-price">{{ product.price|currency }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="product-stock">
+                            {% if product.stock > 0 %}
+                            <span class="text-success"><i class="fas fa-check-circle me-1"></i>Stokta</span>
+                            {% else %}
+                            <span class="text-danger"><i class="fas fa-times-circle me-1"></i>Tükendi</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-box-open fa-4x text-muted mb-4"></i>
+                <h3 class="mb-3">Ürün Bulunamadı</h3>
+                <p class="text-muted mb-4">Aradığınız kriterlere uygun ürün bulunamadı.</p>
+                <a href="{{ url_for('main.products') }}" class="btn btn-primary">
+                    <i class="fas fa-redo me-2"></i>Tüm Ürünleri Göster
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Pagination -->
+    {% if pagination and pagination.pages > 1 %}
+    <nav class="mt-5" aria-label="Sayfalama">
+        <ul class="pagination justify-content-center">
+            {% for page in pagination.iter_pages() %}
+                {% if page %}
+                    <li class="page-item {{ 'active' if page == pagination.page else '' }}">
+                        <a class="page-link" href="{{ url_for('main.products', page=page, **request.args) }}">{{ page }}</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<style>
+/* Hero Section */
+.products-hero {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 1rem;
+    margin: 2rem 0;
+}
+
+.search-form .input-group {
+    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+    border-radius: 0.75rem;
+    overflow: hidden;
+}
+
+.search-form .form-control {
+    border: none;
+    padding: 1rem 1.5rem;
+    font-size: 1.1rem;
+}
+
+.search-form .btn {
+    padding: 0 1.5rem;
+    font-size: 1.1rem;
+}
+
+/* Modern Filters Bar */
+.filters-bar-modern {
+    background: #fff;
+    padding: 1rem;
+    border-radius: 1rem;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+    position: sticky;
+    top: 1rem;
+    z-index: 100;
+}
+
+.filters-bar-modern .btn {
+    padding: 0.75rem 1rem;
+    font-weight: 500;
+    border: 1px solid #e9ecef;
+    border-radius: 0.75rem;
+    transition: all 0.2s;
+}
+
+.filters-bar-modern .btn:hover {
+    background: #f8f9fa;
+    border-color: #dee2e6;
+}
+
+.filters-bar-modern .dropdown-menu {
+    border: none;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.1);
+    border-radius: 1rem;
+    padding: 1rem;
+}
+
+/* Modern Product Card */
+.product-card-modern {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+}
+
+.product-card-modern:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.product-badges {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 3;
+    display: flex;
+    gap: 5px;
+}
+
+.product-badges .badge {
+    padding: 0.5rem 0.75rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+}
+
+.product-image {
+    position: relative;
+    width: 100%;
+    padding-top: 100%;
+    overflow: hidden;
+    background: #f8f9fa;
+}
+
+.product-image a {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.product-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.product-card-modern:hover .product-actions {
+    transform: translateY(0);
+}
+
+.no-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    color: #adb5bd;
+    font-size: 2rem;
+}
+
+.product-actions {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    background: rgba(255,255,255,0);
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+    z-index: 2;
+}
+
+.btn-action {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: #fff;
+    color: #495057;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: all 0.2s;
+    z-index: 2;
+}
+
+.btn-action:hover {
+    background: var(--primary-color);
+    color: #fff;
+    transform: translateY(-2px);
+}
+
+.btn-action.liked {
+    background: #dc3545;
+    color: #fff;
+}
+
+.product-info {
+    padding: 15px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+}
+
+.product-category {
+    font-size: 0.9rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.product-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.product-title a {
+    color: #212529;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.product-title a:hover {
+    color: var(--primary-color);
+}
+
+.product-rating {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin: 0.5rem 0;
+}
+
+.product-rating .fa-star {
+    font-size: 0.9rem;
+}
+
+.rating-count {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-left: 0.25rem;
+}
+
+.product-price {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0.5rem 0;
+}
+
+.original-price {
+    font-size: 0.9rem;
+    color: #6c757d;
+    text-decoration: line-through;
+}
+
+.current-price {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.product-stock {
+    font-size: 0.9rem;
+    margin-top: auto;
+}
+
+/* Pagination */
+.pagination {
+    margin-top: 3rem;
+}
+
+.page-link {
+    padding: 0.75rem 1rem;
+    margin: 0 0.25rem;
+    border-radius: 0.5rem;
+    border: none;
+    color: #495057;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.page-link:hover {
+    background: var(--primary-color);
+    color: #fff;
+}
+
+.page-item.active .page-link {
+    background: var(--primary-color);
+    color: #fff;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .filters-bar-modern {
+        position: static;
+        margin-bottom: 1rem;
+    }
+    
+    .product-card-modern {
+        margin-bottom: 1rem;
+    }
+    
+    .product-actions {
+        bottom: 0;
+        background: rgba(255,255,255,0.95);
+    }
+}
+</style>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Category filter form submission
+    const categoryForm = document.getElementById('categoryForm');
+    
+    categoryForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const checkedCategories = Array.from(categoryForm.querySelectorAll('input[type="checkbox"]:checked'))
+            .map(checkbox => checkbox.value);
+            
+        const url = new URL(window.location.href);
+        
+        // Mevcut kategori parametrelerini temizle
+        url.searchParams.delete('category');
+        
+        // Seçili kategorileri ekle
+        checkedCategories.forEach(category => {
+            url.searchParams.append('category', category);
+        });
+        
+        // Diğer parametreleri koru
+        const otherParams = new URLSearchParams(new FormData(categoryForm));
+        for (let [key, value] of otherParams.entries()) {
+            if (key !== 'category') {
+                url.searchParams.set(key, value);
+            }
+        }
+        
+        window.location.href = url.toString();
+    });
+    
+    // Price filter form submission
+    const priceForm = document.getElementById('priceForm');
+    const priceInputs = priceForm.querySelectorAll('input[type="range"]');
+    
+    let priceTimeout;
+    priceInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            clearTimeout(priceTimeout);
+            priceTimeout = setTimeout(() => {
+                priceForm.submit();
+            }, 500);
+        });
+    });
+});
+
+function addToCart(productId) {
+    fetch('/cart/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            product_id: productId,
+            quantity: 1
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('success', 'Ürün sepete eklendi!');
+            updateCartCount(data.cart_count);
+        } else {
+            showToast('error', data.message || 'Bir hata oluştu.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('error', 'Bir hata oluştu.');
+    });
+}
+
+function toggleLike(productId) {
+    const button = event.currentTarget;
+    if (button.disabled) {
+        showToast('warning', 'Ürünü beğenmek için giriş yapmalısınız.');
+        return;
+    }
+    
+    fetch(`/product/${productId}/like`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            button.classList.toggle('liked');
+            // Tüm sayfadaki aynı ürünün like butonlarını güncelle
+            document.querySelectorAll(`button[onclick="toggleLike(${productId})"]`).forEach(btn => {
+                btn.classList.toggle('liked', button.classList.contains('liked'));
+            });
+            if (data.action === 'liked') {
+                showToast('success', 'Ürün favorilere eklendi!');
+            } else {
+                showToast('info', 'Ürün favorilerden çıkarıldı.');
+            }
+        } else {
+            showToast('error', data.message || 'Bir hata oluştu.');
+        }
+    })
+    .catch(error => {
+        showToast('error', 'Bir hata oluştu.');
+    });
+}
+
+function showToast(type, message) {
+    const toast = document.createElement('div');
+    toast.className = `toast align-items-center text-white bg-${type} border-0 position-fixed bottom-0 end-0 m-3`;
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+    
+    toast.addEventListener('hidden.bs.toast', function () {
+        toast.remove();
+    });
+}
+
+function updateCartCount(count) {
+    const cartCount = document.querySelector('.cart-count');
+    if (cartCount) {
+        cartCount.textContent = count;
+    }
+}
+</script>
+{% endblock %}
+{% endblock %} 

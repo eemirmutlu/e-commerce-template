@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Sipariş Başarılı - TechStore{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="glass-card p-5 text-center">
+                <!-- Başarı İkonu -->
+                <div class="success-icon mb-4">
+                    <i class="fas fa-check-circle fa-4x text-success"></i>
+                </div>
+                
+                <!-- Başlık -->
+                <h2 class="text-gradient mb-4">Siparişiniz Alındı!</h2>
+                
+                <!-- Sipariş Bilgileri -->
+                <div class="order-info mb-4">
+                    <p class="text-muted mb-2">Sipariş Numarası</p>
+                    <h4 class="mb-4">{{ order.id }}</h4>
+                    
+                    <div class="row text-start">
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">Sipariş Tarihi</p>
+                            <p class="mb-0">{{ order.created_at.strftime('%d.%m.%Y %H:%M') }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">Ödeme Yöntemi</p>
+                            <p class="mb-0">
+                                {% if order.payment_method == 'credit_card' %}
+                                    <i class="fas fa-credit-card me-2"></i>Kredi Kartı
+                                {% elif order.payment_method == 'bank_transfer' %}
+                                    <i class="fas fa-university me-2"></i>Havale/EFT
+                                {% else %}
+                                    <i class="fas fa-money-bill-wave me-2"></i>Kapıda Ödeme
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">Sipariş Durumu</p>
+                            <p class="mb-0">
+                                <span class="badge bg-primary">Onay Bekliyor</span>
+                            </p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">Toplam Tutar</p>
+                            <p class="current-price mb-0">{{ order.total_amount|currency }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sipariş Detayları -->
+                <div class="order-details mb-4">
+                    <h5 class="mb-3">Sipariş Detayları</h5>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Ürün</th>
+                                    <th class="text-center">Adet</th>
+                                    <th class="text-end">Fiyat</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in order.items %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if item.product.image_url %}
+                                            <img src="{{ url_for('static', filename='uploads/' + item.product.image_url) }}" 
+                                                 alt="{{ item.product.name }}"
+                                                 class="rounded-2 me-3"
+                                                 style="width: 50px; height: 50px; object-fit: cover;">
+                                            {% else %}
+                                            <div class="no-image rounded-2 me-3" style="width: 50px; height: 50px;">
+                                                <i class="fas fa-image"></i>
+                                            </div>
+                                            {% endif %}
+                                            <div>
+                                                <h6 class="mb-0">{{ item.product.name }}</h6>
+                                                <small class="text-muted">{{ item.product.category.name }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">{{ item.quantity }}</td>
+                                    <td class="text-end">{{ (item.price * item.quantity)|currency }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Bilgi Mesajı -->
+                <div class="alert alert-info mb-4">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Siparişiniz onaylandıktan sonra kargoya verilecektir. Sipariş durumunuzu 
+                    <a href="{{ url_for('main.profile') }}" class="alert-link">profil sayfanızdan</a> 
+                    takip edebilirsiniz.
+                </div>
+                
+                <!-- Butonlar -->
+                <div class="d-flex gap-3 justify-content-center">
+                    <a href="{{ url_for('main.products') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-shopping-bag me-2"></i>Alışverişe Devam Et
+                    </a>
+                    <a href="{{ url_for('main.profile') }}" class="btn btn-primary btn-glow">
+                        <i class="fas fa-user me-2"></i>Profilime Git
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.success-icon {
+    animation: scale-in 0.5s ease-out;
+}
+
+@keyframes scale-in {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.order-info {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 1rem;
+    padding: 2rem;
+}
+
+.table {
+    color: #d0d0d0;
+}
+
+.table th {
+    color: #e0e0e0;
+    font-weight: 500;
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+.table td {
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+    vertical-align: middle;
+}
+
+.alert-info {
+    background: rgba(var(--primary-rgb), 0.1);
+    border: 1px solid rgba(var(--primary-rgb), 0.2);
+    color: #d0d0d0;
+}
+
+.alert-link {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.alert-link:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+    .order-info {
+        padding: 1.5rem;
+    }
+    
+    .d-flex.gap-3 {
+        flex-direction: column;
+    }
+    
+    .btn {
+        width: 100%;
+    }
+}
+</style>
+{% endblock %} 

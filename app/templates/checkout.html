@@ -1,0 +1,639 @@
+{% extends "base.html" %}
+
+{% block title %}Sipariş Özeti{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Kredi Kartı Stilleri */
+.credit-card {
+    background: linear-gradient(135deg, #2c3e50, #3498db);
+    border-radius: 15px;
+    padding: 25px;
+    color: white;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    transition: transform 0.3s ease;
+    margin-bottom: 20px;
+}
+
+.credit-card:hover {
+    transform: translateY(-5px);
+}
+
+.credit-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.credit-card .card-type {
+    font-size: 24px;
+}
+
+.credit-card .card-number {
+    font-size: 24px;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+    font-family: 'Courier New', monospace;
+}
+
+.credit-card .card-details {
+    display: flex;
+    justify-content: space-between;
+}
+
+.credit-card .card-holder {
+    font-size: 14px;
+    text-transform: uppercase;
+}
+
+.credit-card .card-expiry {
+    font-size: 14px;
+}
+
+/* Form Stilleri */
+.form-floating > label {
+    color: #6c757d;
+}
+
+.form-floating > .form-control:focus ~ label,
+.form-floating > .form-control:not(:placeholder-shown) ~ label {
+    color: var(--primary-color);
+}
+
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(52, 152, 219, 0.25);
+}
+
+/* Adres Kartı Stilleri */
+.address-card {
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+}
+
+.address-card:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 10px rgba(52, 152, 219, 0.1);
+}
+
+.address-card.selected {
+    border-color: var(--primary-color);
+    background-color: rgba(52, 152, 219, 0.05);
+}
+
+/* Ürün Listesi Stilleri */
+.product-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.product-item {
+    border-bottom: 1px solid #dee2e6;
+    padding: 15px 0;
+}
+
+.product-item:last-child {
+    border-bottom: none;
+}
+
+/* Animasyonlar */
+.animate-fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h1 class="mb-4">Sipariş Özeti</h1>
+    
+    <div class="row">
+        <!-- Sol Taraf: Ürün Listesi -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Sipariş Edilen Ürünler</h5>
+                    <div class="product-list">
+                        {% for product_id, item in cart.items() %}
+                        <div class="product-item">
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    {% if item.image %}
+                                    <img src="{{ url_for('static', filename=item.image) }}" 
+                                         alt="{{ item.name }}" 
+                                         class="img-thumbnail" 
+                                         style="width: 64px; height: 64px; object-fit: cover;">
+                                    {% endif %}
+                                </div>
+                                <div class="col">
+                                    <h6 class="mb-0">{{ item.name }}</h6>
+                                    <small class="text-muted">Adet: {{ item.quantity }}</small>
+                                </div>
+                                <div class="col-auto">
+                                    <span class="fw-bold">₺{{ "%.2f"|format(item.price * item.quantity) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Adres Formu -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Teslimat Adresi</h5>
+                    
+                    <!-- Mevcut Adresler -->
+                    <div class="mb-4">
+                        {% for address in current_user.addresses %}
+                        <div class="address-card {% if address.is_default %}selected{% endif %}" 
+                             data-address-id="{{ address.id }}">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" 
+                                       name="address" id="address{{ address.id }}" 
+                                       value="{{ address.id }}"
+                                       {% if address.is_default %}checked{% endif %}>
+                                <label class="form-check-label" for="address{{ address.id }}">
+                                    <strong>{{ address.name }}</strong>
+                                </label>
+                            </div>
+                            <p class="mb-1 mt-2">{{ address.full_address }}</p>
+                            <p class="mb-1">{{ address.city }}, {{ address.postal_code }}</p>
+                            <p class="mb-0 text-muted">{{ address.phone }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Yeni Adres Formu -->
+                    <button class="btn btn-outline-primary mb-3" type="button" 
+                            data-bs-toggle="collapse" data-bs-target="#newAddressForm">
+                        <i class="fas fa-plus me-2"></i>Yeni Adres Ekle
+                    </button>
+                    
+                    <div class="collapse" id="newAddressForm">
+                        <form id="addressForm" class="needs-validation" novalidate>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="addressName" 
+                                               name="name" placeholder="Adres Adı" required>
+                                        <label for="addressName">Adres Adı (örn: Ev, İş)</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="tel" class="form-control" id="phone" 
+                                               name="phone" placeholder="Telefon" required>
+                                        <label for="phone">Telefon</label>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-floating">
+                                        <textarea class="form-control" id="fullAddress" 
+                                                  name="full_address" placeholder="Adres" 
+                                                  style="height: 100px" required></textarea>
+                                        <label for="fullAddress">Adres</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="city" 
+                                               name="city" placeholder="Şehir" required>
+                                        <label for="city">Şehir</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="postalCode" 
+                                               name="postal_code" placeholder="Posta Kodu" required>
+                                        <label for="postalCode">Posta Kodu</label>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" 
+                                               id="setDefaultAddress" name="is_default">
+                                        <label class="form-check-label" for="setDefaultAddress">
+                                            Varsayılan adres olarak kaydet
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>Adresi Kaydet
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Kredi Kartı Formu -->
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Ödeme Bilgileri</h5>
+                    
+                    <!-- Mevcut Kartlar -->
+                    <div class="mb-4">
+                        {% for card in current_user.credit_cards %}
+                        <div class="credit-card mb-3 {% if card.is_default %}selected{% endif %}" 
+                             data-card-id="{{ card.id }}">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" 
+                                       name="credit_card" id="card{{ card.id }}" 
+                                       value="{{ card.id }}"
+                                       {% if card.is_default %}checked{% endif %}>
+                                <label class="form-check-label" for="card{{ card.id }}">
+                                    <strong>{{ card.name }}</strong>
+                                </label>
+                            </div>
+                            <div class="card-header">
+                                <span class="card-type">
+                                    <i class="fab fa-cc-visa"></i>
+                                </span>
+                            </div>
+                            <div class="card-number">
+                                {{ card.card_number }}
+                            </div>
+                            <div class="card-details">
+                                <div class="card-holder">
+                                    {{ card.card_holder }}
+                                </div>
+                                <div class="card-expiry">
+                                    {{ '%02d'|format(card.expiry_month) }}/{{ (card.expiry_year|string)[-2:] }}
+                                </div>
+                                <div class="card-cvv">
+                                    CVV: ***
+                                </div>
+                            </div>
+                            {% if card.is_default %}
+                                <span class="badge bg-primary mt-2">Varsayılan</span>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Yeni Kart Ekleme Butonu -->
+                    <button class="btn btn-outline-primary mb-3" type="button" 
+                            data-bs-toggle="collapse" data-bs-target="#newCardForm">
+                        <i class="fas fa-plus me-2"></i>Yeni Kart Ekle
+                    </button>
+                    
+                    <!-- Yeni Kart Formu -->
+                    <div class="collapse" id="newCardForm">
+                        <div class="row">
+                            <!-- Kredi Kartı Görseli -->
+                            <div class="col-md-5">
+                                <div class="credit-card">
+                                    <div class="card-header">
+                                        <span class="card-type">
+                                            <i class="fab fa-cc-visa"></i>
+                                        </span>
+                                    </div>
+                                    <div class="card-number" id="cardNumberDisplay">
+                                        **** **** **** ****
+                                    </div>
+                                    <div class="card-details">
+                                        <div class="card-holder" id="cardHolderDisplay">
+                                            KART SAHİBİ
+                                        </div>
+                                        <div class="card-expiry" id="cardExpiryDisplay">
+                                            MM/YY
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Kredi Kartı Formu -->
+                            <div class="col-md-7">
+                                <form id="creditCardForm" class="needs-validation" novalidate>
+                                    <div class="mb-3">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="cardName" 
+                                                   name="name" placeholder="Kart Adı" required>
+                                            <label for="cardName">Kart Adı (örn: Ana Kart)</label>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="cardNumber" 
+                                                   name="card_number" placeholder="Kart Numarası" 
+                                                   maxlength="19" required>
+                                            <label for="cardNumber">Kart Numarası</label>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <div class="form-floating">
+                                                <input type="text" class="form-control" id="cardHolder" 
+                                                       name="card_holder" placeholder="Kart Sahibi" 
+                                                       required>
+                                                <label for="cardHolder">Kart Sahibi</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-floating">
+                                                <input type="text" class="form-control" id="cardExpiry" 
+                                                       name="card_expiry" placeholder="MM/YY" 
+                                                       maxlength="5" required>
+                                                <label for="cardExpiry">Son Kullanma</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-floating">
+                                                <input type="password" class="form-control" id="cardCvv" 
+                                                       name="card_cvv" placeholder="CVV" 
+                                                       maxlength="4" required>
+                                                <label for="cardCvv">CVV</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" 
+                                                   id="setDefaultCard" name="is_default">
+                                            <label class="form-check-label" for="setDefaultCard">
+                                                Varsayılan kart olarak kaydet
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>Kartı Kaydet
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sağ Taraf: Sipariş Özeti -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm sticky-top" style="top: 100px;">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Sipariş Özeti</h5>
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Ara Toplam:</span>
+                        <span id="subtotal">₺{{ "%.2f"|format(total) }}</span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>KDV (18%):</span>
+                        <span id="tax">₺{{ "%.2f"|format(total * 0.18) }}</span>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between mb-4">
+                        <strong>Genel Toplam:</strong>
+                        <strong id="grand-total">₺{{ "%.2f"|format(total * 1.18) }}</strong>
+                    </div>
+                    
+                    <button class="btn btn-primary w-100" id="completeOrder" disabled>
+                        <i class="fas fa-lock me-2"></i>
+                        Siparişi Tamamla
+                    </button>
+                    
+                    <div class="text-center mt-3">
+                        <small class="text-muted">
+                            <i class="fas fa-lock me-1"></i>
+                            Güvenli ödeme
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Kredi Kartı Görseli Güncelleme
+    const cardNumber = document.getElementById('cardNumber');
+    const cardHolder = document.getElementById('cardHolder');
+    const cardExpiry = document.getElementById('cardExpiry');
+    
+    const cardNumberDisplay = document.getElementById('cardNumberDisplay');
+    const cardHolderDisplay = document.getElementById('cardHolderDisplay');
+    const cardExpiryDisplay = document.getElementById('cardExpiryDisplay');
+    
+    // Kart numarası formatı
+    cardNumber.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        let formattedValue = '';
+        
+        for (let i = 0; i < value.length; i++) {
+            if (i > 0 && i % 4 === 0) {
+                formattedValue += ' ';
+            }
+            formattedValue += value[i];
+        }
+        
+        e.target.value = formattedValue;
+        cardNumberDisplay.textContent = formattedValue || '**** **** **** ****';
+    });
+    
+    // Kart sahibi formatı
+    cardHolder.addEventListener('input', function(e) {
+        let value = e.target.value.toUpperCase();
+        e.target.value = value;
+        cardHolderDisplay.textContent = value || 'KART SAHİBİ';
+    });
+    
+    // Son kullanma tarihi formatı
+    cardExpiry.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length >= 2) {
+            value = value.slice(0, 2) + '/' + value.slice(2, 4);
+        }
+        e.target.value = value;
+        cardExpiryDisplay.textContent = value || 'MM/YY';
+    });
+    
+    // Adres Formu
+    const addressForm = document.getElementById('addressForm');
+    addressForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        if (!this.checkValidity()) {
+            e.stopPropagation();
+            this.classList.add('was-validated');
+            return;
+        }
+        
+        const formData = new FormData(this);
+        const data = {
+            name: formData.get('name'),
+            full_address: formData.get('full_address'),
+            city: formData.get('city'),
+            postal_code: formData.get('postal_code'),
+            phone: formData.get('phone'),
+            is_default: formData.get('is_default') === 'on'
+        };
+        
+        try {
+            const response = await fetch('/address/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showToast('success', 'Adres başarıyla kaydedildi');
+                window.location.reload();
+            } else {
+                showToast('error', result.message || 'Adres kaydedilirken bir hata oluştu');
+            }
+        } catch (error) {
+            console.error('Adres kaydedilirken hata:', error);
+            showToast('error', 'Adres kaydedilirken bir hata oluştu');
+        }
+    });
+    
+    // Kredi Kartı Formu
+    const creditCardForm = document.getElementById('creditCardForm');
+    creditCardForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        if (!this.checkValidity()) {
+            e.stopPropagation();
+            this.classList.add('was-validated');
+            return;
+        }
+        
+        const formData = new FormData(this);
+        const expiry = formData.get('card_expiry').split('/');
+        
+        const data = {
+            name: formData.get('name'),
+            card_number: formData.get('card_number').replace(/\s/g, ''),
+            card_holder: formData.get('card_holder'),
+            expiry_month: parseInt(expiry[0]),
+            expiry_year: parseInt('20' + expiry[1]),
+            cvv: formData.get('card_cvv'),
+            is_default: formData.get('is_default') === 'on'
+        };
+        
+        try {
+            const response = await fetch('/credit-card/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showToast('success', 'Kredi kartı başarıyla kaydedildi');
+                window.location.reload();
+            } else {
+                showToast('error', result.message || 'Kredi kartı kaydedilirken bir hata oluştu');
+            }
+        } catch (error) {
+            console.error('Kredi kartı kaydedilirken hata:', error);
+            showToast('error', 'Kredi kartı kaydedilirken bir hata oluştu');
+        }
+    });
+    
+    // Siparişi Tamamla Butonu
+    const completeOrderBtn = document.getElementById('completeOrder');
+    const addressRadios = document.querySelectorAll('input[name="address"]');
+    
+    function updateCompleteOrderButton() {
+        const hasAddress = document.querySelector('input[name="address"]:checked');
+        const hasCard = document.querySelector('input[name="credit_card"]:checked');
+        completeOrderBtn.disabled = !(hasAddress && hasCard);
+    }
+    
+    addressRadios.forEach(radio => {
+        radio.addEventListener('change', updateCompleteOrderButton);
+    });
+    
+    // Kredi kartı seçimi için event listener
+    const creditCardRadios = document.querySelectorAll('input[name="credit_card"]');
+    creditCardRadios.forEach(radio => {
+        radio.addEventListener('change', updateCompleteOrderButton);
+    });
+    
+    // Kredi kartı kartlarını seçilebilir yap
+    document.querySelectorAll('.credit-card').forEach(card => {
+        card.addEventListener('click', function(e) {
+            if (!e.target.closest('.form-check-input')) {
+                const radio = this.querySelector('input[type="radio"]');
+                if (radio) {
+                    radio.checked = true;
+                    updateCompleteOrderButton();
+                }
+            }
+        });
+    });
+    
+    completeOrderBtn.addEventListener('click', async function() {
+        const selectedAddress = document.querySelector('input[name="address"]:checked');
+        const selectedCard = document.querySelector('input[name="credit_card"]:checked');
+        
+        if (!selectedAddress || !selectedCard) {
+            showToast('error', 'Lütfen adres ve ödeme yöntemi seçin');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/order/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    address_id: selectedAddress.value,
+                    credit_card_id: selectedCard.value
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                window.location.href = `/order/confirmation/${result.order_id}`;
+            } else {
+                showToast('error', result.message || 'Sipariş oluşturulurken bir hata oluştu');
+            }
+        } catch (error) {
+            console.error('Sipariş oluşturulurken hata:', error);
+            showToast('error', 'Sipariş oluşturulurken bir hata oluştu');
+        }
+    });
+});
+</script>
+{% endblock %} 
