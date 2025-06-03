@@ -7,7 +7,7 @@ from app.forms import ProductForm, CategoryForm, NewsForm
 import os
 from datetime import datetime, timedelta
 import logging
-from sqlalchemy import func, desc, cast, Integer
+from sqlalchemy import func, desc, cast, Integer, not_
 from app.utils import admin_required
 import requests
 from functools import wraps
@@ -84,7 +84,7 @@ def dashboard():
         func.count(Visitor.id).label('total_visits'),
         func.sum(cast(Visitor.is_authenticated, Integer)).label('authenticated_visits'),
         func.sum(cast(Visitor.is_admin, Integer)).label('admin_visits'),
-        func.sum(cast(Visitor.is_authenticated == 0, Integer)).label('guest_visits')
+        func.sum(cast(not_(Visitor.is_authenticated), Integer)).label('guest_visits')
     ).filter(
         Visitor.created_at >= datetime.utcnow() - timedelta(days=7)
     ).group_by(
@@ -615,7 +615,7 @@ def visitor_details():
         func.count(Visitor.id).label('total_visits'),
         func.sum(cast(Visitor.is_authenticated, Integer)).label('authenticated_visits'),
         func.sum(cast(Visitor.is_admin, Integer)).label('admin_visits'),
-        func.sum(cast(Visitor.is_authenticated == 0, Integer)).label('guest_visits')
+        func.sum(cast(not_(Visitor.is_authenticated), Integer)).label('guest_visits')
     ).filter(
         Visitor.created_at >= datetime.utcnow() - timedelta(days=days)
     ).group_by(
