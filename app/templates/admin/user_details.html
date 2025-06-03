@@ -425,41 +425,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Kullanıcı Bilgileri -->
-    <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Kullanıcı Bilgileri</h5>
-            <div>
-                <form action="{{ url_for('admin.reset_user_password', user_id=user.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Kullanıcının şifresini sıfırlamak istediğinizden emin misiniz?');">
-                    <button type="submit" class="btn btn-warning btn-sm">
-                        <i class="fas fa-key me-1"></i>Şifreyi Sıfırla
-                    </button>
-                </form>
-                <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="btn btn-primary btn-sm">
-                    <i class="fas fa-edit me-1"></i>Düzenle
-                </a>
-            </div>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <p><strong>Kullanıcı Adı:</strong> {{ user.username }}</p>
-                    <p><strong>E-posta:</strong> {{ user.email }}</p>
-                    <p><strong>Kayıt Tarihi:</strong> {{ user.created_at.strftime('%d.%m.%Y %H:%M') }}</p>
-                </div>
-                <div class="col-md-6">
-                    <p><strong>Son Giriş:</strong> {{ user.last_login.strftime('%d.%m.%Y %H:%M') if user.last_login else 'Henüz giriş yapmadı' }}</p>
-                    <p><strong>Admin:</strong> {{ 'Evet' if user.is_admin else 'Hayır' }}</p>
-                    <p><strong>Durum:</strong> 
-                        <span class="badge bg-{{ 'success' if user.is_active else 'danger' }}">
-                            {{ 'Aktif' if user.is_active else 'Pasif' }}
-                        </span>
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 
 <!-- Kullanıcı Düzenleme Modal -->
