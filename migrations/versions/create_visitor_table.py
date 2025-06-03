@@ -1,7 +1,7 @@
 """Create visitor table
 
 Revision ID: create_visitor_table
-Revises: fix_password_hash_length_postgres
+Revises: increase_password_hash_length
 Create Date: 2024-03-03 16:40:00.000000
 
 """
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = 'create_visitor_table'
-down_revision = 'fix_password_hash_length_postgres'
+down_revision = 'increase_password_hash_length'
 branch_labels = None
 depends_on = None
 
