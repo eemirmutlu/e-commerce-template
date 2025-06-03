@@ -14,6 +14,8 @@ from functools import wraps
 import json
 import csv
 from io import StringIO
+import secrets
+import string
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 logger = logging.getLogger(__name__)
@@ -945,4 +947,33 @@ def update_order_status():
     except Exception as e:
         db.session.rollback()
         logger.error(f"Sipariş durumu güncellenirken hata: {str(e)}")
-        return jsonify({'success': False, 'message': str(e)}), 400 
+        return jsonify({'success': False, 'message': str(e)}), 400
+
+@admin_bp.route('/users/<int:user_id>/reset-password', methods=['POST'])
+@login_required
+@admin_required
+def reset_user_password(user_id):
+    user = User.query.get_or_404(user_id)
+    try:
+        # Varsayılan şifre oluştur (8 karakter, rastgele)
+        alphabet = string.ascii_letters + string.digits
+        new_password = ''.join(secrets.choice(alphabet) for i in range(8))
+        
+        # Şifreyi güncelle
+        user.set_password(new_password)
+        db.session.commit()
+        
+        # Bildirim oluştur
+        Notification.create_notification(
+            message=f'Kullanıcı {user.username} için şifre sıfırlandı',
+            link=url_for('admin.user_details', user_id=user.id),
+            icon='key',
+            icon_color='text-warning'
+        )
+        
+        flash(f'Şifre başarıyla sıfırlandı. Yeni şifre: {new_password}', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Şifre sıfırlanırken bir hata oluştu: {str(e)}', 'error')
+    
+    return redirect(url_for('admin.user_details', user_id=user_id)) 
